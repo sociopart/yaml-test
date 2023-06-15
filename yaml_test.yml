@@ -1,0 +1,33 @@
+---
+- mr_mem: 
+    calloc: "mr_calloc"
+    realloc: "mr_realloc"
+    free: "mr_free"
+  log_level: "MR_LL_ERROR"
+  cache_func_resolve: true
+  msg_handler: null
+  enum_by_name: 
+    context: 
+      data: 
+        ptr: null
+      type: null
+      mr_size: 0
+    ic_type: "MR_IC_HASH"
+    items_count: 146
+    key_type: "mr_fd_t"
+    compar_fn: "mr_fd_name_cmp"
+    virt_func: 
+      - add: "mr_ic_hash_add"
+        del: "mr_ic_hash_del"
+        find: "mr_ic_hash_find"
+        foreach: "mr_ic_hash_foreach"
+        index: "mr_ic_hash_index"
+        free: "mr_ic_hash_free"
+    fields: 
+      - 6809
+      - 6903
+      - 6832
+      - 6880
+      - 6926
+      - 6949
+      - 6857
