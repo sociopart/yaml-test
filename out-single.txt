@@ -1,0 +1,106 @@
+flex lexer.l && bison -d parser.y && gcc -o parser parser.tab.c -lfl && ./parser yaml_test.yml
+YAML_START
+DASH
+KEY: mr_mem
+NEWLINE
+INDENT 
+INDENT 
+KEY: calloc
+STR_VALUE: "mr_calloc"
+NEWLINE
+KEY: realloc
+STR_VALUE: "mr_realloc"
+NEWLINE
+KEY: free
+STR_VALUE: "mr_free"
+NEWLINE
+DEDENT
+KEY: log_level
+STR_VALUE: "MR_LL_ERROR"
+NEWLINE
+KEY: cache_func_resolve
+NEWLINE
+KEY: msg_handler
+NEWLINE
+KEY: enum_by_name
+NEWLINE
+INDENT 
+KEY: context
+NEWLINE
+INDENT 
+KEY: data
+NEWLINE
+INDENT 
+KEY: ptr
+NEWLINE
+DEDENT
+KEY: type
+NEWLINE
+KEY: mr_size
+INT_VALUE: 0
+NEWLINE
+DEDENT
+KEY: ic_type
+STR_VALUE: "MR_IC_HASH"
+NEWLINE
+KEY: items_count
+INT_VALUE: 146
+NEWLINE
+KEY: key_type
+STR_VALUE: "mr_fd_t"
+NEWLINE
+KEY: compar_fn
+STR_VALUE: "mr_fd_name_cmp"
+NEWLINE
+KEY: virt_func
+NEWLINE
+INDENT 
+DASH
+KEY: add
+STR_VALUE: "mr_ic_hash_add"
+NEWLINE
+INDENT 
+KEY: del
+STR_VALUE: "mr_ic_hash_del"
+NEWLINE
+KEY: find
+STR_VALUE: "mr_ic_hash_find"
+NEWLINE
+KEY: foreach
+STR_VALUE: "mr_ic_hash_foreach"
+NEWLINE
+KEY: index
+STR_VALUE: "mr_ic_hash_index"
+NEWLINE
+KEY: free
+STR_VALUE: "mr_ic_hash_free"
+NEWLINE
+DEDENT
+DEDENT
+KEY: fields
+NEWLINE
+INDENT 
+DASH
+INT_VALUE: 6809
+NEWLINE
+DASH
+INT_VALUE: 6903
+NEWLINE
+DASH
+INT_VALUE: 6832
+NEWLINE
+DASH
+INT_VALUE: 6880
+NEWLINE
+DASH
+INT_VALUE: 6926
+NEWLINE
+DASH
+INT_VALUE: 6949
+NEWLINE
+DASH
+INT_VALUE: 6857
+DEDENT
+DEDENT
+DEDENT
+YAML_END

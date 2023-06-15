@@ -13,6 +13,9 @@ DASH              "-"
 COLON             ":"
 SPACE             " "
 INDENT            "  "
+NULL              "null"
+TRUE              "true"
+FALSE             "false"
 NEWLINE           "\n"
 YAML_BLOCK_START  {DASH}{DASH}{DASH}{NEWLINE}
 YAML_BLOCK_END    "..."
@@ -29,6 +32,9 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
 {YAML_BLOCK_START}  { printf("YAML_START\n"); return TOK_YAML1_BLOCK_START; }
 {DASH}              { printf("DASH\n"); return TOK_YAML1_DASH; }
 {COLON}             { printf("COLON\n"); return TOK_YAML1_COLON; }
+{NULL}              { printf("VOID_VALUE: %s\n", yytext); return TOK_YAML1_NULL; }
+{TRUE}              { printf("BOOL_VALUE: %s\n", yytext); return TOK_YAML1_TRUE; }
+{FALSE}             { printf("BOOL_VALUE: %s\n", yytext); return TOK_YAML1_FALSE; }
 {STRING}            { printf("STR_VALUE: %s\n", yytext); return TOK_YAML1_STR; }
 {INT_NUMBER}        { printf("INT_VALUE: %s\n", yytext); return TOK_YAML1_INT; }
 {FLOAT_NUMBER}      { printf("FLT_VALUE: %s\n", yytext); return TOK_YAML1_FLOAT; }
@@ -49,6 +55,9 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
                     }
   {DASH}              { printf("DASH\n"); return TOK_YAML1_DASH; }
   {COLON}             { printf("COLON\n"); return TOK_YAML1_COLON; }
+  {NULL}              { printf("VOID_VALUE: %s\n", yytext); return TOK_YAML1_NULL; }
+  {TRUE}              { printf("BOOL_VALUE: %s\n", yytext); return TOK_YAML1_TRUE; }
+  {FALSE}             { printf("BOOL_VALUE: %s\n", yytext); return TOK_YAML1_FALSE; }
   {STRING}            { printf("STR_VALUE: %s\n", yytext); return TOK_YAML1_STR; }
   {INT_NUMBER}        { printf("INT_VALUE: %s\n", yytext); return TOK_YAML1_INT; }
   {FLOAT_NUMBER}      { printf("FLT_VALUE: %s\n", yytext); return TOK_YAML1_FLOAT; }
