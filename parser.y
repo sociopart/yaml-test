@@ -46,8 +46,8 @@ item: block { printf("Item is a block.\n"); }
 mapping: TOK_YAML1_KEY TOK_YAML1_COLON block { printf("Mapping key: %s\n", $1); }
        ;
 
-block: INDENT sequence DEDENT { printf("Nested block with sequence.\n"); }
-     | INDENT mapping DEDENT { printf("Nested block with mapping.\n"); }
+block: TOK_YAML1_INDENT sequence TOK_YAML1_DEDENT { printf("Nested block with sequence.\n"); }
+     | TOK_YAML1_INDENT mapping TOK_YAML1_DEDENT { printf("Nested block with mapping.\n"); }
      ;
 
 %%
