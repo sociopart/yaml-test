@@ -36,20 +36,6 @@ start:
     ;
 
 statement:
-    TOK_YAML1_BLOCK_START { printf("Token: TOK_YAML1_BLOCK_START\n"); }
-    | TOK_YAML1_BLOCK_END { printf("Token: TOK_YAML1_BLOCK_END\n"); }
-    | TOK_YAML1_DASH { printf("Token: TOK_YAML1_DASH\n"); }
-    | TOK_YAML1_COLON { printf("Token: TOK_YAML1_COLON\n"); }
-    | TOK_YAML1_NULL { printf("Token: TOK_YAML1_NULL\n"); }
-    | TOK_YAML1_TRUE { printf("Token: TOK_YAML1_TRUE\n"); }
-    | TOK_YAML1_FALSE { printf("Token: TOK_YAML1_FALSE\n"); }
-    | TOK_YAML1_STR { printf("Token: TOK_YAML1_STR\n"); }
-    | TOK_YAML1_INT { printf("Token: TOK_YAML1_INT\n"); }
-    | TOK_YAML1_FLOAT { printf("Token: TOK_YAML1_FLOAT\n"); }
-    | TOK_YAML1_NEWLINE { printf("Token: TOK_YAML1_NEWLINE\n"); }
-    | TOK_YAML1_KEY { printf("Token: TOK_YAML1_KEY\n"); }
-    | TOK_YAML1_INDENT { printf("Token: TOK_YAML1_INDENT\n"); }
-    | TOK_YAML1_DEDENT { printf("Token: TOK_YAML1_DEDENT\n"); }
     TOK_YAML1_BLOCK_START { PRS_PRINTF(("Token: TOK_YAML1_BLOCK_START\n")); }
     | TOK_YAML1_BLOCK_END { PRS_PRINTF(("Token: TOK_YAML1_BLOCK_END\n")); }
     | TOK_YAML1_DASH { PRS_PRINTF(("Token: TOK_YAML1_DASH\n")); }
