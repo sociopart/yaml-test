@@ -41,11 +41,21 @@ yaml: TOK_YAML1_BLOCK_START element TOK_YAML1_BLOCK_END {printf("YS-EL-YE\n");}
     | element TOK_YAML1_BLOCK_END {printf("EL-YE\n");}
     | element {printf("EL-ONLY\n");}
 
-element: value 
+element: value
 
-value: TOK_YAML1_STRING {printf("STRING found\n");}
-  | TOK_YAML1_NUMBER {printf("NUMBER found\n");}
-  | TOK_YAML1_NULL   {printf("NULL found\n");}
+value: mapping {printf("MAPPING found %s\n", yytext);}
+       | sequence {printf("SEQUENCE found %s\n", yytext);}
+       | TOK_YAML1_STRING {printf("STRING found %s\n", yytext);}
+       | TOK_YAML1_NUMBER {printf("NUMBER found %s\n", yytext);}
+       | TOK_YAML1_NULL   {printf("NULL found\n");}
+
+mapping: TOK_YAML1_INDENT TOK_YAML1_KEY value {printf("MAPPING found\n");}
+       | TOK_YAML1_INDENT TOK_YAML1_KEY mapping {printf("MAPPING found\n");}
+       | TOK_YAML1_INDENT TOK_YAML1_KEY sequence {printf("MAPPING found\n");}
+
+sequence: TOK_YAML1_INDENT TOK_YAML1_DASH value {printf("SEQUENCE found\n");}
+        | TOK_YAML1_INDENT TOK_YAML1_DASH mapping {printf("SEQUENCE found\n");}
+        | TOK_YAML1_INDENT TOK_YAML1_DASH sequence {printf("SEQUENCE found\n");}
 
 %%
 
