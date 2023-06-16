@@ -86,11 +86,11 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
                     }
 {COLON}             { LEX_PRINTF(("[LEX]COLON\n")); SEND_TOKEN(TOK_YAML1_COLON); }
 {NULL}              { LEX_PRINTF(("[LEX]VOID_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NULL); }
-{TRUE}              { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_TRUE); }
-{FALSE}             { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_FALSE); }
-{STRING}            { LEX_PRINTF(("[LEX]STR_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_STR); }
-{INT_NUMBER}        { LEX_PRINTF(("[LEX]INT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_INT); }
-{FLOAT_NUMBER}      { LEX_PRINTF(("[LEX]FLT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_FLOAT); }
+{TRUE}              { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
+{FALSE}             { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
+{STRING}            { LEX_PRINTF(("[LEX]STR_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_STRING); }
+{INT_NUMBER}        { LEX_PRINTF(("[LEX]INT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
+{FLOAT_NUMBER}      { LEX_PRINTF(("[LEX]FLT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
 {KEY}               {
                       // Otherwise, first symbol of a "key:\n" is a letter.
                       if (object_need_resolve == 1)
@@ -102,7 +102,7 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
                       LEX_PRINTF(("[LEX]KEY: %s\n", yytext));
                       SEND_TOKEN(TOK_YAML1_KEY);
                     }
-{NEWLINE}           { /*LEX_PRINTF(("[LEX]NEWLINE\n")); SEND_TOKEN(TOK_YAML1_NEWLINE);*/ }
+{NEWLINE}           { LEX_PRINTF(("[LEX]NEWLINE\n")); SEND_TOKEN(TOK_YAML1_NEWLINE); }
 {INDENT}+           {  
                         int new_indent_level = yyleng / 2;
                         int diff = new_indent_level - indent_level;

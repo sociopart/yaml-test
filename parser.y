@@ -28,34 +28,35 @@ int object_need_resolve = 0;
 %token TOK_YAML1_INDENT TOK_YAML1_DEDENT
 %token TOK_YAML1_NULL TOK_YAML1_TRUE TOK_YAML1_FALSE
 %token TOK_YAML1_DASH TOK_YAML1_COLON TOK_YAML1_NEWLINE TOK_YAML1_KEY BLOCK_END
-%token TOK_YAML1_STR TOK_YAML1_INT TOK_YAML1_FLOAT
+%token TOK_YAML1_STRING TOK_YAML1_NUMBER
 %token TOK_YAML1_OBJ_START TOK_YAML1_ARR_START
 
+%start yaml
 %%
-statement: TOK_YAML1_BLOCK_START content TOK_YAML1_BLOCK_END { PRS_PRINTF(("YAML started\n")); }
 
-content: element
-| content element
+yaml: element
 
-element: TOK_YAML1_DASH { PRS_PRINTF(("Token: TOK_YAML1_DASH\n")); }
-| TOK_YAML1_COLON { PRS_PRINTF(("Token: TOK_YAML1_COLON\n")); }
-| TOK_YAML1_NULL { PRS_PRINTF(("Token: TOK_YAML1_NULL\n")); }
-| TOK_YAML1_TRUE { PRS_PRINTF(("Token: TOK_YAML1_TRUE\n")); }
-| TOK_YAML1_FALSE { PRS_PRINTF(("Token: TOK_YAML1_FALSE\n")); }
-| TOK_YAML1_STR { PRS_PRINTF(("Token: TOK_YAML1_STR\n")); }
-| TOK_YAML1_INT { PRS_PRINTF(("Token: TOK_YAML1_INT\n")); }
-| TOK_YAML1_FLOAT { PRS_PRINTF(("Token: TOK_YAML1_FLOAT\n")); }
-| TOK_YAML1_NEWLINE { PRS_PRINTF(("Token: TOK_YAML1_NEWLINE\n")); }
-| TOK_YAML1_KEY { PRS_PRINTF(("Token: TOK_YAML1_KEY\n")); }
-| TOK_YAML1_INDENT { PRS_PRINTF(("Token: TOK_YAML1_INDENT\n")); }
-| TOK_YAML1_DEDENT { PRS_PRINTF(("Token: TOK_YAML1_DEDENT\n")); }
-| TOK_YAML1_ARR_START { PRS_PRINTF(("Token: TOK_YAML1_ARR_START\n")); }
-| TOK_YAML1_OBJ_START { PRS_PRINTF(("Token: TOK_YAML1_OBJ_START\n")); }
+element: value
+
+value: object | array
+  | TOK_YAML1_STRING
+  | TOK_YAML1_NUMBER
+  | TOK_YAML1_NULL
+
+object: TOK_YAML1_OBJ_START TOK_YAML1_DEDENT
+| TOK_YAML1_OBJ_START members TOK_YAML1_DEDENT
+
+members: member | member TOK_YAML1_NEWLINE members
+
+member: TOK_YAML1_KEY TOK_YAML1_COLON element // ???
+
+array: TOK_YAML1_ARR_START TOK_YAML1_DEDENT
+| TOK_YAML1_ARR_START elements TOK_YAML1_DEDENT
+
+elements: element | element TOK_YAML1_NEWLINE elements
+
 
 %%
-const char* token_name(int t) {
-    return yytname[YYTRANSLATE(t)];
-}
 
 int main() {
 
