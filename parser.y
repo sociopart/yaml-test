@@ -7,14 +7,17 @@ extern FILE* yyin;
 
 void yyerror(const char* message) {
     fprintf(stderr, "Parser error at line %d: %s\n", yylineno, message);
-
+}
 #define PRS_DBG
 #ifdef PRS_DBG
   #define PRS_PRINTF(pargs)    printf pargs
 #else
   #define PRS_PRINTF(pargs)    (void)(0)
 #endif
+void output_token(const char* nonTerminal, const char* tokenType, const char* value) {
+    printf("Non-terminal: %s, Token type: %s, Value: %s\n", nonTerminal, tokenType, value);
 }
+
 %}
 
 %define parse.trace
@@ -29,25 +32,35 @@ void yyerror(const char* message) {
 %token TOK_YAML1_OBJ_START TOK_YAML1_ARR_START
 %token TOK_YAML1_OBJ_END TOK_YAML1_ARR_END
 
-%%
-statement: content
+%start yaml1
 
-content: element
-| content element
+%% /* The grammar follows.  */
 
-element: TOK_YAML1_DASH { PRS_PRINTF(("Token: TOK_YAML1_DASH\n")); }
-| TOK_YAML1_COLON       { PRS_PRINTF(("Token: TOK_YAML1_COLON\n")); }
-| TOK_YAML1_NULL        { PRS_PRINTF(("Token: TOK_YAML1_NULL\n")); }
-| TOK_YAML1_STRING      { PRS_PRINTF(("Token: TOK_YAML1_STRING\n")); }
-| TOK_YAML1_NUMBER      { PRS_PRINTF(("Token: TOK_YAML1_NUMBER\n")); }
-| TOK_YAML1_NEWLINE     { PRS_PRINTF(("Token: TOK_YAML1_NEWLINE\n")); }
-| TOK_YAML1_KEY         { PRS_PRINTF(("Token: TOK_YAML1_KEY\n")); }
-| TOK_YAML1_OBJ_START   { PRS_PRINTF(("Token: TOK_YAML1_OBJ_START\n")); }
-| TOK_YAML1_OBJ_END     { PRS_PRINTF(("Token: TOK_YAML1_OBJ_END\n")); }
-| TOK_YAML1_ARR_START   { PRS_PRINTF(("Token: TOK_YAML1_ARR_START\n")); }
-| TOK_YAML1_ARR_END     { PRS_PRINTF(("Token: TOK_YAML1_ARR_END\n")); }
-| TOK_YAML1_BLOCK_START { PRS_PRINTF(("Token: TOK_YAML1_BLOCK_START\n")); }
-| TOK_YAML1_BLOCK_END   { PRS_PRINTF(("Token: TOK_YAML1_BLOCK_END\n")); }
+yaml1: element { printf("Parsing completed successfully.\n"); }
+
+element: value
+
+value: object { printf("Parsed object.\n"); }
+     | array { printf("Parsed array.\n"); }
+     | TOK_YAML1_STRING { printf("Parsed string: %s\n", yytext); }
+     | TOK_YAML1_NUMBER { printf("Parsed number: %s\n", yytext); }
+     | TOK_YAML1_NULL { printf("Parsed null.\n"); }
+
+object: TOK_YAML1_OBJ_START TOK_YAML1_OBJ_END { printf("Parsed empty object.\n"); }
+      | TOK_YAML1_OBJ_START members TOK_YAML1_OBJ_END { printf("Parsed object with members.\n"); }
+
+members: member TOK_YAML1_NEWLINE { printf("Parsed member.\n"); }
+       | member TOK_YAML1_NEWLINE members { printf("Parsed member.\n"); }
+
+member: TOK_YAML1_KEY element { printf("Parsed key-value pair: %s\n", yytext); }
+
+array: TOK_YAML1_ARR_START TOK_YAML1_ARR_END { printf("Parsed empty array.\n"); }
+     | TOK_YAML1_ARR_START elements TOK_YAML1_ARR_END { printf("Parsed array with elements.\n"); }
+
+elements: element { printf("Parsed array element.\n"); }
+        | element TOK_YAML1_NEWLINE elements { printf("Parsed array element.\n"); }
+
+
 
 %%
 
