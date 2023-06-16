@@ -30,32 +30,22 @@ int indent_level = 0;
 %token TOK_YAML1_INDENT TOK_YAML1_DEDENT
 %token TOK_YAML1_NULL TOK_YAML1_TRUE TOK_YAML1_FALSE
 %token TOK_YAML1_DASH TOK_YAML1_COLON TOK_YAML1_NEWLINE TOK_YAML1_KEY BLOCK_END
-%token TOK_YAML1_STR TOK_YAML1_INT TOK_YAML1_FLOAT 
+%token TOK_YAML1_STRING TOK_YAML1_NUMBER 
 
-%start start
+%start yaml
 
 %%
 
-start:
-    | start statement { PRS_PRINTF(("--Start of new statement--\n")); }
-    ;
+yaml: TOK_YAML1_BLOCK_START element TOK_YAML1_BLOCK_END {printf("YS-EL-YE\n");}
+    | TOK_YAML1_BLOCK_START element {printf("YS-EL\n");}
+    | element TOK_YAML1_BLOCK_END {printf("EL-YE\n");}
+    | element {printf("EL-ONLY\n");}
 
-statement:
-    TOK_YAML1_BLOCK_START { PRS_PRINTF(("Token: TOK_YAML1_BLOCK_START\n")); }
-    | TOK_YAML1_BLOCK_END { PRS_PRINTF(("Token: TOK_YAML1_BLOCK_END\n")); }
-    | TOK_YAML1_DASH { PRS_PRINTF(("Token: TOK_YAML1_DASH\n")); }
-    | TOK_YAML1_COLON { PRS_PRINTF(("Token: TOK_YAML1_COLON\n")); }
-    | TOK_YAML1_NULL { PRS_PRINTF(("Token: TOK_YAML1_NULL\n")); }
-    | TOK_YAML1_TRUE { PRS_PRINTF(("Token: TOK_YAML1_TRUE\n")); }
-    | TOK_YAML1_FALSE { PRS_PRINTF(("Token: TOK_YAML1_FALSE\n")); }
-    | TOK_YAML1_STR { PRS_PRINTF(("Token: TOK_YAML1_STR\n")); }
-    | TOK_YAML1_INT { PRS_PRINTF(("Token: TOK_YAML1_INT\n")); }
-    | TOK_YAML1_FLOAT { PRS_PRINTF(("Token: TOK_YAML1_FLOAT\n")); }
-    | TOK_YAML1_NEWLINE { PRS_PRINTF(("Token: TOK_YAML1_NEWLINE\n")); }
-    | TOK_YAML1_KEY { PRS_PRINTF(("Token: TOK_YAML1_KEY\n")); }
-    | TOK_YAML1_INDENT { PRS_PRINTF(("Token: TOK_YAML1_INDENT\n")); }
-    | TOK_YAML1_DEDENT { PRS_PRINTF(("Token: TOK_YAML1_DEDENT\n")); }
-    ;
+element: value 
+
+value: TOK_YAML1_STRING {printf("STRING found\n");}
+  | TOK_YAML1_NUMBER {printf("NUMBER found\n");}
+  | TOK_YAML1_NULL   {printf("NULL found\n");}
 
 %%
 

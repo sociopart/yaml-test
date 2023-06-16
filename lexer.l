@@ -29,7 +29,10 @@ yypstate* pstate = NULL;
   for (int i = 0; i < amount; ++i) {                    \
     status = yypush_parse(pstate, token, &yylval);      \
     if (status != YYPUSH_MORE) {                        \
-      yypstate_delete(pstate);                          \
+      if (pstate != NULL) {                             \
+        yypstate_delete(pstate);                        \
+        pstate = NULL;                                  \
+      }                                                 \
       return status;                                    \
     }                                                   \
   }                                                     \
@@ -65,11 +68,11 @@ WS	[[:space:]]+
 {DASH}              { LEX_PRINTF(("[LEX]DASH\n")); SEND_TOKEN(TOK_YAML1_DASH); }
 {COLON}             { LEX_PRINTF(("[LEX]COLON\n")); SEND_TOKEN(TOK_YAML1_COLON); }
 {NULL}              { LEX_PRINTF(("[LEX]VOID_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NULL); }
-{TRUE}              { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_TRUE); }
-{FALSE}             { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_FALSE); }
-{STRING}            { LEX_PRINTF(("[LEX]STR_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_STR); }
-{INT_NUMBER}        { LEX_PRINTF(("[LEX]INT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_INT); }
-{FLOAT_NUMBER}      { LEX_PRINTF(("[LEX]FLT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_FLOAT); }
+{TRUE}              { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
+{FALSE}             { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
+{STRING}            { LEX_PRINTF(("[LEX]STR_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_STRING); }
+{INT_NUMBER}        { LEX_PRINTF(("[LEX]INT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
+{FLOAT_NUMBER}      { LEX_PRINTF(("[LEX]FLT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
 {NEWLINE}           { LEX_PRINTF(("[LEX]NEWLINE\n")); SEND_TOKEN(TOK_YAML1_NEWLINE); }
 {KEY}{COLON}        {
                       yytext[yyleng - 1] = '\0';  // Set the last symbol to null terminator
@@ -95,21 +98,31 @@ WS	[[:space:]]+
                       if (indent_level > 0)
                       {
                         SEND_N_TOKENS(TOK_YAML1_DEDENT, indent_level);
-                        LEX_PRINTF_N(diff, ("[LEX] DEDENT\n"));
+                        LEX_PRINTF_N(indent_level, ("[LEX] DEDENT\n"));
+                        indent_level = 0;
                       }
                       SEND_TOKEN(TOK_YAML1_BLOCK_END);
                       SEND_TOKEN(0);
-                      yypstate_delete(pstate);
+                      if (pstate != NULL)
+                      {
+                        yypstate_delete(pstate);
+                        pstate = NULL;
+                      }
                       return 0; 
                     }
 <<EOF>>             {  
                       if (indent_level > 0)
                       {
                         SEND_N_TOKENS(TOK_YAML1_DEDENT, indent_level);
-                        LEX_PRINTF_N(diff, ("[LEX] DEDENT\n"));
+                        LEX_PRINTF_N(indent_level, ("[LEX] DEDENT\n"));
+                        indent_level = 0;
                       }
                       SEND_TOKEN(0);
-                      yypstate_delete(pstate);
+                      if (pstate != NULL)
+                      {
+                        yypstate_delete(pstate);
+                        pstate = NULL;
+                      }
                       return 0;  
                     }
 .                   { /* Ignore all other characters */ }
