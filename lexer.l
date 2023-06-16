@@ -50,6 +50,24 @@ void ts_destroy(token_stack* stack) {
     free(stack);
 }
 
+#define TOKEN_STACK_PUSH(token)                         \
+    do {                                                \
+        if (t_stack == NULL)                            \
+            t_stack = ts_create();                      \
+        ts_push(t_stack, token);                        \
+    } while (0)
+
+#define STACK_POP_N_TOKENS(amount)                      \
+    do {                                                \
+        int current_token = -1;                         \
+        for (int i = 0; i < amount; i++) {              \
+            current_token = ts_pop(t_stack);            \
+            if (current_token != -1) {                  \
+                SEND_TOKEN(current_token);              \
+            }                                           \
+        }                                               \
+    } while (0)
+
 // -----------------------------------------------------------------------------
 // Definitions
 //#define LEX_DBG
@@ -67,18 +85,16 @@ void ts_destroy(token_stack* stack) {
   yypush_parse(pstate, token, &yylval);                 \
 } while (0)
 
-#define TOKEN_STACK_PUSH(token) {                       \
-  if (t_stack == NULL) t_stack = ts_create();           \
-  ts_push(t_stack, token);                              \
-}                                                       \
+#define CLEANUP()                                       \
+    do {                                                \
+        if (pstate != NULL) {                           \
+            yypstate_delete(pstate);                    \
+        }                                               \
+        if (t_stack != NULL) {                          \
+          ts_destroy(t_stack);                          \
+        }                                               \
+    } while (0)
 
-#define POP_N_TOKENS(amount) {                          \
-  for (int i = 0; i < amount; i++) {                    \
-      current_token = ts_pop(t_stack);                  \
-      if(current_token != -1) {                         \
-          SEND_TOKEN(current_token);                    \
-      }                                                 \
-  }                                                     \
 
 int yyinput(void) {
     return getc(yyin);
@@ -117,16 +133,15 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
 
 {YAML_BLOCK_START}  { LEX_PRINTF(("[LEX]YAML_START\n")); SEND_TOKEN(TOK_YAML1_BLOCK_START); }
 {DASH}{SPACE}+      {
-                      int stack_peek = ts_peek(t_stack);
-                      if (stack_peek != TOK_YAML1_ARR_END)
+                      if (ts_peek(t_stack) != TOK_YAML1_ARR_END)
                       {
                         SEND_TOKEN(TOK_YAML1_ARR_START);
                         TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
                       }
                     }
 {SPACE}*{KEY}{SPACE}*{COLON}{SPACE}*{NEWLINE}  {
-                    SEND_TOKEN(TOK_YAML1_OBJ_START);
-                    TOKEN_STACK_PUSH(TOK_YAML1_OBJ_END);
+                      SEND_TOKEN(TOK_YAML1_OBJ_START);
+                      TOKEN_STACK_PUSH(TOK_YAML1_OBJ_END);
                     }
 {NULL}              { LEX_PRINTF(("[LEX]VOID_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NULL); }
 {TRUE}              { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
@@ -138,52 +153,23 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
 {INDENT}+           {  
                         int new_indent_level = yyleng / 2;
                         int diff = new_indent_level - indent_level;
-                        int current_token = -1;
                         if (diff < 0)
                         {
-                          for (int i = 0; i < -diff; i++)
-                          {
-                            current_token = ts_pop(t_stack);
-                            if(current_token != -1)
-                            {
-                              SEND_TOKEN(current_token);
-                            }
-                          }
+                          STACK_POP_N_TOKENS(-diff);
                         }
                         indent_level = new_indent_level;
                     }
-{YAML_BLOCK_END}    { 
-                      int current_token = -1;
-                      for (int i = 0; i < indent_level; i++) {
-                          current_token = ts_pop(t_stack);
-                          if(current_token != -1)
-                          {
-                            SEND_TOKEN(current_token);
-                          }
-                      }
+{YAML_BLOCK_END}    {
+                      STACK_POP_N_TOKENS(indent_level);
                       indent_level = 0;
-                      if (pstate != NULL)
-                      {
-                        yypstate_delete(pstate); 
-                      }
+                      CLEANUP();
                       return TOK_YAML1_BLOCK_END; 
                     }
 <<EOF>>             {  
-                      int current_token = -1;
-                      for (int i = 0; i < indent_level; i++) {
-                          current_token = ts_pop(t_stack);
-                          if(current_token != -1)
-                          {
-                            SEND_TOKEN(current_token);
-                          }
-                      }
+                      STACK_POP_N_TOKENS(indent_level);
                       indent_level = 0;
                       SEND_TOKEN(TOK_YAML1_BLOCK_END);
-
-                      if (pstate != NULL)
-                      {
-                        yypstate_delete(pstate); 
-                      }
+                      CLEANUP();
                       return 0;  
                     }
 .                   { /* Ignore all other characters */ }
