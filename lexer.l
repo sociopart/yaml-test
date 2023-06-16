@@ -1,9 +1,48 @@
 %{
 #include <stdio.h>
 #include "parser.tab.h"  // Include the parser header file
-#include <stdbool.h>
-extern int indent_level;
-extern int object_need_resolve;
+// -----------------------------------------------------------------------------
+// Helper structure which will hold all stack info.
+typedef struct {
+    int* array;
+    int top;
+    int size;
+} token_stack;
+
+
+token_stack* create_stack() {
+    token_stack* stack = (token_stack*)malloc(sizeof(token_stack));
+    stack->array = (int*)malloc(10 * sizeof(int));
+    stack->top = -1;
+    stack->size = 10;
+    return stack;
+}
+
+void push(token_stack* stack, int item) {
+    if (stack == NULL) stack = create_stack();
+    if (stack->top == stack->size - 1) {
+        stack->size *= 2;
+        stack->array = (int*)realloc(stack->array, stack->size * sizeof(int));
+    }
+    stack->array[++stack->top] = item;
+}
+
+int pop(token_stack* stack) {
+    if (stack == NULL) stack = create_stack();
+    return (stack->top == -1)? -1 : stack->array[stack->top--];
+}
+
+void destroy_stack(token_stack* stack) {
+    free(stack->array);
+    free(stack);
+}
+
+// -----------------------------------------------------------------------------
+
+token_stack* t_stack = NULL;
+int indent_level = 0;
+int object_need_resolve = 0;
+
 YYSTYPE yylval;
 yypstate *pstate = NULL;
 extern FILE* yyin;
@@ -11,7 +50,7 @@ int yyinput(void) {
     return getc(yyin);
 }
 
-//#define LEX_DBG
+#define LEX_DBG
 #ifdef LEX_DBG
   #define LEX_PRINTF(pargs)    printf pargs
 #else

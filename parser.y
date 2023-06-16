@@ -15,9 +15,6 @@ void yyerror(const char* message) {
   #define PRS_PRINTF(pargs)    (void)(0)
 #endif
 }
-
-int indent_level = 0;
-int object_need_resolve = 0;
 %}
 
 %define parse.trace
