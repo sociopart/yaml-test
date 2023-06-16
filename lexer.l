@@ -9,8 +9,7 @@ typedef struct {
     int size;
 } token_stack;
 
-
-token_stack* create_stack() {
+token_stack* ts_create() {
     token_stack* stack = (token_stack*)malloc(sizeof(token_stack));
     stack->array = (int*)malloc(10 * sizeof(int));
     stack->top = -1;
@@ -18,56 +17,73 @@ token_stack* create_stack() {
     return stack;
 }
 
-void push(token_stack* stack, int item) {
-    if (stack == NULL) stack = create_stack();
-    if (stack->top == stack->size - 1) {
+void ts_push(token_stack* stack, int item) {
+    if (stack->top == stack->size - 2) {
         stack->size *= 2;
         stack->array = (int*)realloc(stack->array, stack->size * sizeof(int));
     }
     stack->array[++stack->top] = item;
 }
 
-int pop(token_stack* stack) {
-    if (stack == NULL) stack = create_stack();
-    return (stack->top == -1)? -1 : stack->array[stack->top--];
+void ts_display(token_stack* stack) {
+    if (stack->top != -1) {
+        printf("Stack is empty.\n");
+        return;
+    }
+    printf("Stack: ");
+    for (int i = stack->top; i >= 0; i--) {
+        printf("%d ", stack->array[i]);
+    }
+    printf("\n");
 }
 
-void destroy_stack(token_stack* stack) {
+int ts_pop(token_stack* stack) {
+    return (stack != NULL && stack->top != -1) ? stack->array[stack->top--] : -1;
+}
+
+int ts_peek(token_stack* stack) {
+    return (stack != NULL && stack->top != -1) ? stack->array[stack->top] : -1;
+}
+
+void ts_destroy(token_stack* stack) {
     free(stack->array);
     free(stack);
 }
 
 // -----------------------------------------------------------------------------
-
-token_stack* t_stack = NULL;
-int indent_level = 0;
-int object_need_resolve = 0;
-
-YYSTYPE yylval;
-yypstate *pstate = NULL;
-extern FILE* yyin;
-int yyinput(void) {
-    return getc(yyin);
-}
-
-#define LEX_DBG
+// Definitions
+//#define LEX_DBG
 #ifdef LEX_DBG
   #define LEX_PRINTF(pargs)    printf pargs
 #else
-  #define LEX_PRINTF(pargs)         (void)(0)
+  #define LEX_PRINTF(pargs)    (void)(0)
 #endif
 
-#define SEND_N_TOKENS(token, amount) do {               \
+#define SEND_TOKEN(token) do {                          \
   if (pstate == NULL)                                   \
   {                                                     \
     pstate = yypstate_new();                            \
   }                                                     \
-  for (int i = 0; i < amount; ++i) {                    \
-    yypush_parse(pstate, token, &yylval);               \
-  }                                                     \
+  yypush_parse(pstate, token, &yylval);                 \
 } while (0)
 
-#define SEND_TOKEN(token) SEND_N_TOKENS(token, 1)
+#define TOKEN_STACK_PUSH(token)  {                      \
+  if (t_stack == NULL) t_stack = ts_create();           \
+  ts_push(t_stack, token);                              \
+}                                                       \
+
+int yyinput(void) {
+    return getc(yyin);
+}
+
+int indent_level = 0;
+int object_need_resolve = 0;
+token_stack* t_stack = NULL;
+
+YYSTYPE yylval;
+yypstate *pstate = NULL;
+extern FILE* yyin;
+// -----------------------------------------------------------------------------
 %}
 
 %option noyywrap
@@ -93,78 +109,53 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
 
 {YAML_BLOCK_START}  { LEX_PRINTF(("[LEX]YAML_START\n")); SEND_TOKEN(TOK_YAML1_BLOCK_START); }
 {DASH}{SPACE}+      {
-                      if (object_need_resolve == 1)
+                      int stack_peek = ts_peek(t_stack);
+                      if (stack_peek != TOK_YAML1_ARR_END)
                       {
-                        // First symbol of line after "key:\n" is a dash.
-                        LEX_PRINTF(("[LEX]YAML_ARR_START\n")); 
                         SEND_TOKEN(TOK_YAML1_ARR_START);
-                        object_need_resolve = 0;
+                        TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
                       }
-                      int next_char = input();
-                      
-                      //LEX_PRINTF(("[LEX]DASH\n")); 
-                      //SEND_TOKEN(TOK_YAML1_DASH);
-
-                      // If no newline defined, then insert it as a token.
-                      if (next_char != '\n') {
-                          // Get back to DASH position
-                          LEX_PRINTF(("[LEX]NEWLINE\n")); 
-                          //SEND_TOKEN(TOK_YAML1_NEWLINE);
-                      }
-                      // Unput the first char we extracted.
-                      unput(next_char);
                     }
-{COLON}{SPACE}+     {
-                      // If smth is defined like "key:\n", then it's probably
-                      // an array or a structure.
-                      // If it's an array, it will contain dash as a first
-                      // symbol of next line.
-                      int next_char = input();
-                      object_need_resolve = (next_char == '\n');
-                      unput(next_char);
+{SPACE}*{KEY}{SPACE}*{COLON}{SPACE}*{NEWLINE}  {
+                    SEND_TOKEN(TOK_YAML1_OBJ_START);
+                    printf("OBJ_END is: %d\n", TOK_YAML1_OBJ_END);
+                    TOKEN_STACK_PUSH(TOK_YAML1_OBJ_END);
+                    printf("Stack peek is: %d\n", ts_peek(t_stack));
                     }
-{COLON}             { LEX_PRINTF(("[LEX]COLON\n")); SEND_TOKEN(TOK_YAML1_COLON); }
 {NULL}              { LEX_PRINTF(("[LEX]VOID_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NULL); }
 {TRUE}              { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
 {FALSE}             { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
-{STRING}            { LEX_PRINTF(("[LEX]STR_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_STRING); }
-{INT_NUMBER}        { LEX_PRINTF(("[LEX]INT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
-{FLOAT_NUMBER}      { LEX_PRINTF(("[LEX]FLT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
-{KEY}               {
-                      // Otherwise, first symbol of a "key:\n" is a letter.
-                      if (object_need_resolve == 1)
-                      {
-                        LEX_PRINTF(("[LEX]YAML_OBJ_START\n")); 
-                        SEND_TOKEN(TOK_YAML1_OBJ_START);
-                        object_need_resolve = 0;
-                      }
-                      LEX_PRINTF(("[LEX]KEY: %s\n", yytext));
-                      SEND_TOKEN(TOK_YAML1_KEY);
-                    }
-{NEWLINE}           { LEX_PRINTF(("[LEX]NEWLINE\n")); SEND_TOKEN(TOK_YAML1_NEWLINE); }
+{STRING}            { LEX_PRINTF(("[LEX]STR_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_STRING); }
+{INT_NUMBER}        { LEX_PRINTF(("[LEX]INT_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_NUMBER); }
+{FLOAT_NUMBER}      { LEX_PRINTF(("[LEX]FLT_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_NUMBER); }
+{NEWLINE}           { LEX_PRINTF(("[LEX]NEWLINE\n"));                SEND_TOKEN(TOK_YAML1_NEWLINE); }
 {INDENT}+           {  
                         int new_indent_level = yyleng / 2;
                         int diff = new_indent_level - indent_level;
-                        if (diff > 0) {
-                            for (int i = 0; i < diff; i++) {
-                                //SEND_TOKEN(TOK_YAML1_INDENT);
-                                LEX_PRINTF(("[LEX]INDENT\n"));
+                        int current_token = -1;
+                        if (diff < 0)
+                        {
+                          for (int i = 0; i < -diff; i++)
+                          {
+                            current_token = ts_pop(t_stack);
+                            if(current_token != -1)
+                            {
+                              SEND_TOKEN(current_token);
                             }
-                        } else if (diff < 0) {
-                            for (int i = 0; i < -diff; i++) {
-                                SEND_TOKEN(TOK_YAML1_DEDENT);
-                                LEX_PRINTF(("[LEX]DEDENT\n"));
-                            }
+                          }
                         }
                         indent_level = new_indent_level;
                     }
 {YAML_BLOCK_END}    { 
-                      while (indent_level > 0)
-                      {
-                        SEND_TOKEN(TOK_YAML1_DEDENT);
-                        LEX_PRINTF(("[LEX]DEDENT\n"));
-                        indent_level--;
+                      int current_token = -1;
+                      for (int i = 0; i < indent_level; i++) {
+                          current_token = ts_pop(t_stack);
+                          if(current_token != -1)
+                          {
+                            SEND_TOKEN(current_token);
+                          }
                       }
+                      indent_level = 0;
                       if (pstate != NULL)
                       {
                         yypstate_delete(pstate); 
@@ -172,13 +163,17 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
                       return TOK_YAML1_BLOCK_END; 
                     }
 <<EOF>>             {  
-                      while (indent_level > 0)
-                      {
-                        SEND_TOKEN(TOK_YAML1_DEDENT);
-                        LEX_PRINTF(("[LEX]DEDENT\n"));
-                        indent_level--;
+                      int current_token = -1;
+                      for (int i = 0; i < indent_level; i++) {
+                          current_token = ts_pop(t_stack);
+                          if(current_token != -1)
+                          {
+                            SEND_TOKEN(current_token);
+                          }
                       }
-                      yypush_parse(pstate, TOK_YAML1_BLOCK_END, &yylval);
+                      indent_level = 0;
+                      SEND_TOKEN(TOK_YAML1_BLOCK_END);
+
                       if (pstate != NULL)
                       {
                         yypstate_delete(pstate); 
@@ -186,5 +181,3 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
                       return 0;  
                     }
 .                   { /* Ignore all other characters */ }
-
-%%
