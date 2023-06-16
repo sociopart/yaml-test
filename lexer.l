@@ -3,8 +3,7 @@
 #include "parser.tab.h"  // Include the parser header file
 
 extern int indent_level;
-void process_yaml_end();
-int process_indentation(int new_indent_level);
+YYSTYPE yylval;
 %}
 
 %option noyywrap
@@ -26,7 +25,6 @@ FLOAT_INF         [+-]?[Ii][Nn][Ff]
 FLOAT_NUMBER      {FLOAT_NAN}|{FLOAT_INF}|{INT_NUMBER}("."[[:digit:]]*)?([eE]{INT_NUMBER})?
 KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
 
-%x INDENT_STATE
 %%
 
 {YAML_BLOCK_START}  { printf("YAML_START\n"); return TOK_YAML1_BLOCK_START; }
@@ -45,51 +43,46 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
                       return TOK_YAML1_KEY;
                     }
 {INDENT}+           {  
-                      return process_indentation(yyleng / 2);
+                        yypstate* pstate = yypstate_new();
+                        int new_indent_level = yyleng / 2;
+                        int diff = new_indent_level - indent_level;
+                        if (diff > 0) {
+                            for (int i = 0; i < diff; i++) {
+                                yypush_parse(pstate, TOK_YAML1_INDENT, &yylval);
+                                printf("INDENT \n");
+                            }
+                        } else if (diff < 0) {
+                            for (int i = 0; i < -diff; i++) {
+                                yypush_parse(pstate, TOK_YAML1_DEDENT, &yylval);
+                                printf("DEDENT\n");
+                            }
+                        }
+                        indent_level = new_indent_level;
+                        yypstate_delete(pstate);
                     }
-<INDENT_STATE>{
-  {INDENT}+         {
-                      BEGIN(INITIAL);
-                      return process_indentation(yyleng / 2);
+{YAML_BLOCK_END}    { 
+                      yypstate* pstate = yypstate_new();
+                      while (indent_level > 0)
+                      {
+                        yypush_parse(pstate, TOK_YAML1_DEDENT, &yylval);
+                        printf("DEDENT\n");
+                        indent_level--;
+                      }
+                      yypstate_delete(pstate); 
+                      return TOK_YAML1_BLOCK_END; 
                     }
-}
-{YAML_BLOCK_END}    { process_yaml_end(); return TOK_YAML1_BLOCK_END; }
-<<EOF>>             { process_yaml_end(); return 0; }
+<<EOF>>             {  
+                      yypstate* pstate = yypstate_new();
+                      while (indent_level > 0)
+                      {
+                        yypush_parse(pstate, TOK_YAML1_DEDENT, &yylval);
+                        printf("DEDENT\n");
+                        indent_level--;
+                      }
+                      yypush_parse(pstate, TOK_YAML1_BLOCK_END, &yylval);
+                      yypstate_delete(pstate); 
+                      return 0;  
+                    }
 .                   { /* Ignore all other characters */ }
 
 %%
-
-int process_indentation(int new_indent_level) {
-  int diff = new_indent_level - indent_level;
-  int token = -1;
-  while (diff != 0) {
-    if (diff > 0) {
-      printf("INDENT\n");
-      indent_level++;
-      token = TOK_YAML1_INDENT;
-      diff--;
-      if (diff > 0) {
-        BEGIN(INDENT_STATE);  // Change state to INDENT_STATE
-      }
-    } else {
-      printf("DEDENT\n");
-      indent_level--;
-      token = TOK_YAML1_DEDENT;
-      diff++;
-      if (diff > 0) {
-        BEGIN(INDENT_STATE);  // Change state to INDENT_STATE
-      }
-    }
-  }
-  return token;
-}
-
-void process_yaml_end()
-{
-  if (indent_level > 0) {
-    for (int i = 0; i < indent_level; i++) {
-      printf("DEDENT\n");
-    }
-  }
-  
-}
