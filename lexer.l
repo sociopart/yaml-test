@@ -11,18 +11,11 @@ int yyinput(void) {
     return getc(yyin);
 }
 
-#define LEX_DBG
+//#define LEX_DBG
 #ifdef LEX_DBG
   #define LEX_PRINTF(pargs)    printf pargs
-  #define LEX_PRINTF_N(n, pargs) do { \
-    for (int i = 0; i < n; ++i)       \
-    {                                 \
-      printf pargs;                    \
-    }                                 \
-  } while(0)
 #else
   #define LEX_PRINTF(pargs)         (void)(0)
-  #define LEX_PRINTF_N(n, pargs)    (void)(0)
 #endif
 
 #define SEND_N_TOKENS(token, amount) do {               \
@@ -70,14 +63,14 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
                       }
                       int next_char = input();
                       
-                      LEX_PRINTF(("[LEX]DASH\n")); 
-                      SEND_TOKEN(TOK_YAML1_DASH);
+                      //LEX_PRINTF(("[LEX]DASH\n")); 
+                      //SEND_TOKEN(TOK_YAML1_DASH);
 
                       // If no newline defined, then insert it as a token.
                       if (next_char != '\n') {
                           // Get back to DASH position
                           LEX_PRINTF(("[LEX]NEWLINE\n")); 
-                          SEND_TOKEN(TOK_YAML1_NEWLINE);
+                          //SEND_TOKEN(TOK_YAML1_NEWLINE);
                       }
                       // Unput the first char we extracted.
                       unput(next_char);
@@ -109,13 +102,13 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
                       LEX_PRINTF(("[LEX]KEY: %s\n", yytext));
                       SEND_TOKEN(TOK_YAML1_KEY);
                     }
-{NEWLINE}           { LEX_PRINTF(("[LEX]NEWLINE\n")); SEND_TOKEN(TOK_YAML1_NEWLINE); }
+{NEWLINE}           { /*LEX_PRINTF(("[LEX]NEWLINE\n")); SEND_TOKEN(TOK_YAML1_NEWLINE);*/ }
 {INDENT}+           {  
                         int new_indent_level = yyleng / 2;
                         int diff = new_indent_level - indent_level;
                         if (diff > 0) {
                             for (int i = 0; i < diff; i++) {
-                                SEND_TOKEN(TOK_YAML1_INDENT);
+                                //SEND_TOKEN(TOK_YAML1_INDENT);
                                 LEX_PRINTF(("[LEX]INDENT\n"));
                             }
                         } else if (diff < 0) {

@@ -8,7 +8,7 @@ extern FILE* yyin;
 void yyerror(const char* message) {
     fprintf(stderr, "Parser error at line %d: %s\n", yylineno, message);
 
-//#define PRS_DBG
+#define PRS_DBG
 #ifdef PRS_DBG
   #define PRS_PRINTF(pargs)    printf pargs
 #else
