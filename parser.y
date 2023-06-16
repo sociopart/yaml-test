@@ -1,17 +1,20 @@
 %{
 #include <stdio.h>
-#include "lex.yy.c"
 extern int yylex();
 extern int yylineno;
 extern char* yytext;
+extern FILE* yyin;
 
 void yyerror(const char* message) {
     fprintf(stderr, "Parser error at line %d: %s\n", yylineno, message);
 }
 
 int indent_level = 0;
-
 %}
+
+%define parse.trace
+%define api.pure full
+%define api.push-pull push
 
 %token TOK_YAML1_BLOCK_START TOK_YAML1_BLOCK_END
 %token TOK_YAML1_INDENT TOK_YAML1_DEDENT
@@ -52,6 +55,9 @@ block: TOK_YAML1_INDENT sequence TOK_YAML1_DEDENT { printf("Nested block with se
      ;
 
 %%
+const char* token_name(int t) {
+    return yytname[YYTRANSLATE(t)];
+}
 
 int main() {
 
