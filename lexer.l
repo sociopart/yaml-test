@@ -74,8 +74,7 @@ WS	[[:space:]]+
 {INT_NUMBER}        { LEX_PRINTF(("[LEX]INT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
 {FLOAT_NUMBER}      { LEX_PRINTF(("[LEX]FLT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
 {NEWLINE}           { LEX_PRINTF(("[LEX]NEWLINE\n")); SEND_TOKEN(TOK_YAML1_NEWLINE); }
-{KEY}{COLON}        {
-                      yytext[yyleng - 1] = '\0';  // Set the last symbol to null terminator
+{KEY}               {
                       LEX_PRINTF(("[LEX]KEY: %s\n", yytext));
                       SEND_TOKEN(TOK_YAML1_KEY);
                     }
