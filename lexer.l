@@ -70,7 +70,6 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
                           
                           LEX_PRINTF(("[LEX]NEWLINE\n")); 
                           SEND_TOKEN(TOK_YAML1_NEWLINE);
-                          indent_level++;
                       }
                       unput(next_char);
                     }
