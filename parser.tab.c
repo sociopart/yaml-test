@@ -54,13 +54,13 @@
 #define YYSKELETON_NAME "yacc.c"
 
 /* Pure parsers.  */
-#define YYPURE 0
+#define YYPURE 2
 
 /* Push parsers.  */
-#define YYPUSH 0
+#define YYPUSH 1
 
 /* Pull parsers.  */
-#define YYPULL 1
+#define YYPULL 0
 
 
 
@@ -69,10 +69,10 @@
 #line 1 "parser.y"
 
 #include <stdio.h>
-#include "lex.yy.c"
 extern int yylex();
 extern int yylineno;
 extern char* yytext;
+extern FILE* yyin;
 
 void yyerror(const char* message) {
     fprintf(stderr, "Parser error at line %d: %s\n", yylineno, message);
@@ -80,8 +80,7 @@ void yyerror(const char* message) {
 
 int indent_level = 0;
 
-
-#line 85 "parser.tab.c"
+#line 84 "parser.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -118,7 +117,7 @@ int indent_level = 0;
 # define YY_YY_PARSER_TAB_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 0
+# define YYDEBUG 1
 #endif
 #if YYDEBUG
 extern int yydebug;
@@ -155,9 +154,18 @@ typedef int YYSTYPE;
 #endif
 
 
-extern YYSTYPE yylval;
 
-int yyparse (void);
+#ifndef YYPUSH_MORE_DEFINED
+# define YYPUSH_MORE_DEFINED
+enum { YYPUSH_MORE = 4 };
+#endif
+
+typedef struct yypstate yypstate;
+
+int yypush_parse (yypstate *ps, int pushed_char, YYSTYPE const *pushed_val);
+
+yypstate * yypstate_new (void);
+void yypstate_delete (yypstate *ps);
 
 #endif /* !YY_YY_PARSER_TAB_H_INCLUDED  */
 
@@ -338,30 +346,6 @@ typedef int yy_state_fast_t;
 
 /* The parser invokes alloca or malloc; define the necessary symbols.  */
 
-# ifdef YYSTACK_USE_ALLOCA
-#  if YYSTACK_USE_ALLOCA
-#   ifdef __GNUC__
-#    define YYSTACK_ALLOC __builtin_alloca
-#   elif defined __BUILTIN_VA_ARG_INCR
-#    include <alloca.h> /* INFRINGES ON USER NAME SPACE */
-#   elif defined _AIX
-#    define YYSTACK_ALLOC __alloca
-#   elif defined _MSC_VER
-#    include <malloc.h> /* INFRINGES ON USER NAME SPACE */
-#    define alloca _alloca
-#   else
-#    define YYSTACK_ALLOC alloca
-#    if ! defined _ALLOCA_H && ! defined EXIT_SUCCESS
-#     include <stdlib.h> /* INFRINGES ON USER NAME SPACE */
-      /* Use EXIT_SUCCESS as a witness for stdlib.h.  */
-#     ifndef EXIT_SUCCESS
-#      define EXIT_SUCCESS 0
-#     endif
-#    endif
-#   endif
-#  endif
-# endif
-
 # ifdef YYSTACK_ALLOC
    /* Pacify GCC's 'empty if-body' warning.  */
 #  define YYSTACK_FREE(Ptr) do { /* empty */; } while (0)
@@ -523,8 +507,8 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    23,    23,    24,    27,    30,    31,    34,    37,    38,
-      41,    42,    43,    44,    47,    50,    51
+       0,    26,    26,    27,    30,    33,    34,    37,    40,    41,
+      44,    45,    46,    47,    50,    53,    54
 };
 #endif
 
@@ -1069,23 +1053,11 @@ yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep)
 
 
 
+struct yypstate
+  {
+    /* Number of syntax errors so far.  */
+    int yynerrs;
 
-/* The lookahead symbol.  */
-int yychar;
-
-/* The semantic value of the lookahead symbol.  */
-YYSTYPE yylval;
-/* Number of syntax errors so far.  */
-int yynerrs;
-
-
-/*----------.
-| yyparse.  |
-`----------*/
-
-int
-yyparse (void)
-{
     yy_state_fast_t yystate;
     /* Number of tokens to shift before error messages enabled.  */
     int yyerrstatus;
@@ -1108,6 +1080,66 @@ yyparse (void)
     YYSTYPE *yyvsp;
 
     YYPTRDIFF_T yystacksize;
+    /* Used to determine if this is the first time this instance has
+       been used.  */
+    int yynew;
+  };
+
+/* Initialize the parser data structure.  */
+yypstate *
+yypstate_new (void)
+{
+  yypstate *yyps;
+  yyps = YY_CAST (yypstate *, malloc (sizeof *yyps));
+  if (!yyps)
+    return YY_NULLPTR;
+  yyps->yynew = 1;
+  return yyps;
+}
+
+void
+yypstate_delete (yypstate *yyps)
+{
+  if (yyps)
+    {
+#ifndef yyoverflow
+      /* If the stack was reallocated but the parse did not complete, then the
+         stack still needs to be freed.  */
+      if (!yyps->yynew && yyps->yyss != yyps->yyssa)
+        YYSTACK_FREE (yyps->yyss);
+#endif
+      free (yyps);
+    }
+}
+
+#define yynerrs yyps->yynerrs
+#define yystate yyps->yystate
+#define yyerrstatus yyps->yyerrstatus
+#define yyssa yyps->yyssa
+#define yyss yyps->yyss
+#define yyssp yyps->yyssp
+#define yyvsa yyps->yyvsa
+#define yyvs yyps->yyvs
+#define yyvsp yyps->yyvsp
+#define yystacksize yyps->yystacksize
+
+
+/*---------------.
+| yypush_parse.  |
+`---------------*/
+
+int
+yypush_parse (yypstate *yyps, int yypushed_char, YYSTYPE const *yypushed_val)
+{
+/* The lookahead symbol.  */
+int yychar;
+
+
+/* The semantic value of the lookahead symbol.  */
+/* Default value used for initialization, for pacifying older GCCs
+   or non-GCC compilers.  */
+YY_INITIAL_VALUE (static YYSTYPE yyval_default;)
+YYSTYPE yylval YY_INITIAL_VALUE (= yyval_default);
 
   int yyn;
   int yyresult;
@@ -1129,6 +1161,12 @@ yyparse (void)
   /* The number of symbols on the RHS of the reduced rule.
      Keep to zero when no symbol should be popped.  */
   int yylen = 0;
+
+  if (!yyps->yynew)
+    {
+      yyn = yypact[yystate];
+      goto yyread_pushed_token;
+    }
 
   yyssp = yyss = yyssa;
   yyvsp = yyvs = yyvsa;
@@ -1248,8 +1286,18 @@ yybackup:
   /* YYCHAR is either YYEMPTY or YYEOF or a valid lookahead symbol.  */
   if (yychar == YYEMPTY)
     {
+      if (!yyps->yynew)
+        {
+          YYDPRINTF ((stderr, "Return for a new token:\n"));
+          yyresult = YYPUSH_MORE;
+          goto yypushreturn;
+        }
+      yyps->yynew = 0;
+yyread_pushed_token:
       YYDPRINTF ((stderr, "Reading a token: "));
-      yychar = yylex ();
+      yychar = yypushed_char;
+      if (yypushed_val)
+        yylval = *yypushed_val;
     }
 
   if (yychar <= YYEOF)
@@ -1326,97 +1374,97 @@ yyreduce:
   switch (yyn)
     {
   case 2:
-#line 23 "parser.y"
+#line 26 "parser.y"
                                                           { printf("Parsing complete.\n"); }
-#line 1332 "parser.tab.c"
-    break;
-
-  case 3:
-#line 24 "parser.y"
-                                     { printf("Parsing complete.\n"); }
-#line 1338 "parser.tab.c"
-    break;
-
-  case 4:
-#line 27 "parser.y"
-                { printf("Document parsed.\n"); }
-#line 1344 "parser.tab.c"
-    break;
-
-  case 5:
-#line 30 "parser.y"
-                { printf("Block is a sequence.\n"); }
-#line 1350 "parser.tab.c"
-    break;
-
-  case 6:
-#line 31 "parser.y"
-               { printf("Block is a mapping.\n"); }
-#line 1356 "parser.tab.c"
-    break;
-
-  case 7:
-#line 34 "parser.y"
-                               { printf("Sequence item.\n"); }
-#line 1362 "parser.tab.c"
-    break;
-
-  case 8:
-#line 37 "parser.y"
-            { printf("Items parsed.\n"); }
-#line 1368 "parser.tab.c"
-    break;
-
-  case 9:
-#line 38 "parser.y"
-                  { printf("Items parsed.\n"); }
-#line 1374 "parser.tab.c"
-    break;
-
-  case 10:
-#line 41 "parser.y"
-            { printf("Item is a block.\n"); }
 #line 1380 "parser.tab.c"
     break;
 
-  case 11:
-#line 42 "parser.y"
-                    { printf("Item is a string value: %s\n", yyvsp[0]); }
+  case 3:
+#line 27 "parser.y"
+                                     { printf("Parsing complete.\n"); }
 #line 1386 "parser.tab.c"
     break;
 
-  case 12:
-#line 43 "parser.y"
-                    { printf("Item is an integer value: %s\n", yyvsp[0]); }
+  case 4:
+#line 30 "parser.y"
+                { printf("Document parsed.\n"); }
 #line 1392 "parser.tab.c"
     break;
 
-  case 13:
-#line 44 "parser.y"
-                      { printf("Item is a float value: %s\n", yyvsp[0]); }
+  case 5:
+#line 33 "parser.y"
+                { printf("Block is a sequence.\n"); }
 #line 1398 "parser.tab.c"
     break;
 
-  case 14:
-#line 47 "parser.y"
-                                             { printf("Mapping key: %s\n", yyvsp[-2]); }
+  case 6:
+#line 34 "parser.y"
+               { printf("Block is a mapping.\n"); }
 #line 1404 "parser.tab.c"
     break;
 
-  case 15:
-#line 50 "parser.y"
-                                                  { printf("Nested block with sequence.\n"); }
+  case 7:
+#line 37 "parser.y"
+                               { printf("Sequence item.\n"); }
 #line 1410 "parser.tab.c"
     break;
 
-  case 16:
-#line 51 "parser.y"
-                                                 { printf("Nested block with mapping.\n"); }
+  case 8:
+#line 40 "parser.y"
+            { printf("Items parsed.\n"); }
 #line 1416 "parser.tab.c"
     break;
 
+  case 9:
+#line 41 "parser.y"
+                  { printf("Items parsed.\n"); }
+#line 1422 "parser.tab.c"
+    break;
 
-#line 1420 "parser.tab.c"
+  case 10:
+#line 44 "parser.y"
+            { printf("Item is a block.\n"); }
+#line 1428 "parser.tab.c"
+    break;
+
+  case 11:
+#line 45 "parser.y"
+                    { printf("Item is a string value: %s\n", yyvsp[0]); }
+#line 1434 "parser.tab.c"
+    break;
+
+  case 12:
+#line 46 "parser.y"
+                    { printf("Item is an integer value: %s\n", yyvsp[0]); }
+#line 1440 "parser.tab.c"
+    break;
+
+  case 13:
+#line 47 "parser.y"
+                      { printf("Item is a float value: %s\n", yyvsp[0]); }
+#line 1446 "parser.tab.c"
+    break;
+
+  case 14:
+#line 50 "parser.y"
+                                             { printf("Mapping key: %s\n", yyvsp[-2]); }
+#line 1452 "parser.tab.c"
+    break;
+
+  case 15:
+#line 53 "parser.y"
+                                                  { printf("Nested block with sequence.\n"); }
+#line 1458 "parser.tab.c"
+    break;
+
+  case 16:
+#line 54 "parser.y"
+                                                 { printf("Nested block with mapping.\n"); }
+#line 1464 "parser.tab.c"
+    break;
+
+
+#line 1468 "parser.tab.c"
 
       default: break;
     }
@@ -1642,14 +1690,24 @@ yyreturn:
   if (yyss != yyssa)
     YYSTACK_FREE (yyss);
 #endif
+  yyps->yynew = 1;
+
+
+/*-----------------------------------------.
+| yypushreturn -- ask for the next token.  |
+`-----------------------------------------*/
+yypushreturn:
 #if YYERROR_VERBOSE
   if (yymsg != yymsgbuf)
     YYSTACK_FREE (yymsg);
 #endif
   return yyresult;
 }
-#line 54 "parser.y"
+#line 57 "parser.y"
 
+const char* token_name(int t) {
+    return yytname[YYTRANSLATE(t)];
+}
 
 int main() {
 

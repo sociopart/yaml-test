@@ -38,7 +38,7 @@
 # define YY_YY_PARSER_TAB_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 0
+# define YYDEBUG 1
 #endif
 #if YYDEBUG
 extern int yydebug;
@@ -75,8 +75,17 @@ typedef int YYSTYPE;
 #endif
 
 
-extern YYSTYPE yylval;
 
-int yyparse (void);
+#ifndef YYPUSH_MORE_DEFINED
+# define YYPUSH_MORE_DEFINED
+enum { YYPUSH_MORE = 4 };
+#endif
+
+typedef struct yypstate yypstate;
+
+int yypush_parse (yypstate *ps, int pushed_char, YYSTYPE const *pushed_val);
+
+yypstate * yypstate_new (void);
+void yypstate_delete (yypstate *ps);
 
 #endif /* !YY_YY_PARSER_TAB_H_INCLUDED  */
