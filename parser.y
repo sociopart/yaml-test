@@ -8,7 +8,7 @@ extern FILE* yyin;
 void yyerror(const char* message) {
     fprintf(stderr, "Parser error at line %d: %s\n", yylineno, message);
 
-#define PRS_DBG
+//#define PRS_DBG
 #ifdef PRS_DBG
   #define PRS_PRINTF(pargs)    printf pargs
 #else
@@ -17,6 +17,7 @@ void yyerror(const char* message) {
 }
 
 int indent_level = 0;
+int object_need_resolve = 0;
 %}
 
 %define parse.trace
@@ -27,7 +28,8 @@ int indent_level = 0;
 %token TOK_YAML1_INDENT TOK_YAML1_DEDENT
 %token TOK_YAML1_NULL TOK_YAML1_TRUE TOK_YAML1_FALSE
 %token TOK_YAML1_DASH TOK_YAML1_COLON TOK_YAML1_NEWLINE TOK_YAML1_KEY BLOCK_END
-%token TOK_YAML1_STR TOK_YAML1_INT TOK_YAML1_FLOAT 
+%token TOK_YAML1_STR TOK_YAML1_INT TOK_YAML1_FLOAT
+%token TOK_YAML1_OBJ_START TOK_YAML1_ARR_START
 
 %%
 statement: TOK_YAML1_BLOCK_START content TOK_YAML1_BLOCK_END { PRS_PRINTF(("YAML started\n")); }
@@ -47,6 +49,8 @@ element: TOK_YAML1_DASH { PRS_PRINTF(("Token: TOK_YAML1_DASH\n")); }
 | TOK_YAML1_KEY { PRS_PRINTF(("Token: TOK_YAML1_KEY\n")); }
 | TOK_YAML1_INDENT { PRS_PRINTF(("Token: TOK_YAML1_INDENT\n")); }
 | TOK_YAML1_DEDENT { PRS_PRINTF(("Token: TOK_YAML1_DEDENT\n")); }
+| TOK_YAML1_ARR_START { PRS_PRINTF(("Token: TOK_YAML1_ARR_START\n")); }
+| TOK_YAML1_OBJ_START { PRS_PRINTF(("Token: TOK_YAML1_OBJ_START\n")); }
 
 %%
 const char* token_name(int t) {
