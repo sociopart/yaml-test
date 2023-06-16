@@ -30,12 +30,10 @@ void yyerror(const char* message) {
 
 %% /* The grammar follows.  */
 
-yaml1: TOK_YAML1_BLOCK_START element TOK_YAML1_BLOCK_END
-  | TOK_YAML1_BLOCK_END element
-  | element TOK_YAML1_BLOCK_END
-  | element
-
-element { printf("Parsing completed successfully.\n"); }
+yaml1: TOK_YAML1_BLOCK_START element TOK_YAML1_BLOCK_END {printf("YAML parsed.\n");}
+    | TOK_YAML1_BLOCK_END element {printf("YAML parsed.\n");}
+    | element TOK_YAML1_BLOCK_END {printf("YAML parsed.\n");}
+    | element {printf("YAML parsed.\n");}
 
 element: value
 
@@ -48,8 +46,8 @@ value: object { printf("Parsed object.\n"); }
 object: TOK_YAML1_OBJ_START TOK_YAML1_OBJ_END { printf("Parsed empty object.\n"); }
       | TOK_YAML1_OBJ_START members TOK_YAML1_OBJ_END { printf("Parsed object with members.\n"); }
 
-members: member TOK_YAML1_NEWLINE { printf("Parsed member.\n"); }
-       | member TOK_YAML1_NEWLINE members { printf("Parsed member.\n"); }
+members: member { printf("Parsed member.\n"); }
+       | members TOK_YAML1_NEWLINE member { printf("Parsed member.\n"); }
 
 member: TOK_YAML1_STRING TOK_YAML1_COLON element { printf("Parsed key-value pair: %s\n", yytext); }
 
@@ -57,9 +55,7 @@ array: TOK_YAML1_ARR_START TOK_YAML1_ARR_END { printf("Parsed empty array.\n"); 
      | TOK_YAML1_ARR_START elements TOK_YAML1_ARR_END { printf("Parsed array with elements.\n"); }
 
 elements: element { printf("Parsed array element.\n"); }
-        | element TOK_YAML1_NEWLINE elements { printf("Parsed array element.\n"); }
-
-
+        | elements TOK_YAML1_NEWLINE element { printf("Parsed array element.\n"); }
 
 %%
 
