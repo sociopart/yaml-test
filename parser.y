@@ -4,7 +4,7 @@ extern int yylex();
 extern int yylineno;
 extern char* yytext;
 extern FILE* yyin;
-
+#define YYDEBUG 1
 void yyerror(const char* message) {
     fprintf(stderr, "Parser error at line %d: %s\n", yylineno, message);
 }
@@ -14,10 +14,6 @@ void yyerror(const char* message) {
 #else
   #define PRS_PRINTF(pargs)    (void)(0)
 #endif
-void output_token(const char* nonTerminal, const char* tokenType, const char* value) {
-    printf("Non-terminal: %s, Token type: %s, Value: %s\n", nonTerminal, tokenType, value);
-}
-
 %}
 
 %define parse.trace
@@ -25,12 +21,10 @@ void output_token(const char* nonTerminal, const char* tokenType, const char* va
 %define api.push-pull push
 
 %token TOK_YAML1_BLOCK_START TOK_YAML1_BLOCK_END
-%token TOK_YAML1_INDENT TOK_YAML1_DEDENT
-%token TOK_YAML1_NULL TOK_YAML1_TRUE TOK_YAML1_FALSE
-%token TOK_YAML1_DASH TOK_YAML1_COLON TOK_YAML1_NEWLINE TOK_YAML1_KEY BLOCK_END
-%token TOK_YAML1_STRING TOK_YAML1_NUMBER
-%token TOK_YAML1_OBJ_START TOK_YAML1_ARR_START
-%token TOK_YAML1_OBJ_END TOK_YAML1_ARR_END
+%token TOK_YAML1_COLON TOK_YAML1_NEWLINE
+%token TOK_YAML1_NULL TOK_YAML1_STRING TOK_YAML1_NUMBER
+%token TOK_YAML1_OBJ_START TOK_YAML1_OBJ_END
+%token TOK_YAML1_ARR_START TOK_YAML1_ARR_END
 
 %start yaml1
 
@@ -57,7 +51,7 @@ object: TOK_YAML1_OBJ_START TOK_YAML1_OBJ_END { printf("Parsed empty object.\n")
 members: member TOK_YAML1_NEWLINE { printf("Parsed member.\n"); }
        | member TOK_YAML1_NEWLINE members { printf("Parsed member.\n"); }
 
-member: TOK_YAML1_KEY element { printf("Parsed key-value pair: %s\n", yytext); }
+member: TOK_YAML1_STRING TOK_YAML1_COLON element { printf("Parsed key-value pair: %s\n", yytext); }
 
 array: TOK_YAML1_ARR_START TOK_YAML1_ARR_END { printf("Parsed empty array.\n"); }
      | TOK_YAML1_ARR_START elements TOK_YAML1_ARR_END { printf("Parsed array with elements.\n"); }

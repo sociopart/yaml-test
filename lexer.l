@@ -145,18 +145,21 @@ YAML_KEY              {KEY}{SPACE}*{COLON}{SPACE}*
                         }
 {YAML_KEY_ARRAY_PAIR}   {
                           SEND_TOKEN(TOK_YAML1_STRING);
+                          SEND_TOKEN(TOK_YAML1_COLON);
                           SEND_TOKEN(TOK_YAML1_ARR_START);
                           TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
                           LEX_PRINTF(("[LEX] array is: %s", yytext));
                         }
 {YAML_KEY_OBJECT_PAIR}  {
                           SEND_TOKEN(TOK_YAML1_STRING);
+                          SEND_TOKEN(TOK_YAML1_COLON);
                           SEND_TOKEN(TOK_YAML1_OBJ_START);
                           TOKEN_STACK_PUSH(TOK_YAML1_OBJ_END);
                           LEX_PRINTF(("[LEX] object is: %s", yytext));
                         }
-{YAML_KEY}              {
+{YAML_KEY}:             {
                           SEND_TOKEN(TOK_YAML1_STRING);
+                          SEND_TOKEN(TOK_YAML1_COLON);
                           LEX_PRINTF(("[LEX] key is: %s\n", yytext));
                         }
 {NULL}                  { LEX_PRINTF(("[LEX]VOID_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NULL); }
