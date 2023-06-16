@@ -30,26 +30,23 @@ int indent_level = 0;
 %token TOK_YAML1_STR TOK_YAML1_INT TOK_YAML1_FLOAT 
 
 %%
-start:
-    | start statement { }
-    | start statement { }
-    ;
+statement: TOK_YAML1_BLOCK_START content TOK_YAML1_BLOCK_END { PRS_PRINTF(("YAML started\n")); }
 
-statement:
-    TOK_YAML1_BLOCK_START { PRS_PRINTF(("Token: TOK_YAML1_BLOCK_START\n")); }
-    | TOK_YAML1_BLOCK_END { PRS_PRINTF(("Token: TOK_YAML1_BLOCK_END\n")); }
-    | TOK_YAML1_DASH { PRS_PRINTF(("Token: TOK_YAML1_DASH\n")); }
-    | TOK_YAML1_COLON { PRS_PRINTF(("Token: TOK_YAML1_COLON\n")); }
-    | TOK_YAML1_NULL { PRS_PRINTF(("Token: TOK_YAML1_NULL\n")); }
-    | TOK_YAML1_TRUE { PRS_PRINTF(("Token: TOK_YAML1_TRUE\n")); }
-    | TOK_YAML1_FALSE { PRS_PRINTF(("Token: TOK_YAML1_FALSE\n")); }
-    | TOK_YAML1_STR { PRS_PRINTF(("Token: TOK_YAML1_STR\n")); }
-    | TOK_YAML1_INT { PRS_PRINTF(("Token: TOK_YAML1_INT\n")); }
-    | TOK_YAML1_FLOAT { PRS_PRINTF(("Token: TOK_YAML1_FLOAT\n")); }
-    | TOK_YAML1_NEWLINE { PRS_PRINTF(("Token: TOK_YAML1_NEWLINE\n")); }
-    | TOK_YAML1_KEY { PRS_PRINTF(("Token: TOK_YAML1_KEY\n")); }
-    | TOK_YAML1_INDENT { PRS_PRINTF(("Token: TOK_YAML1_INDENT\n")); }
-    | TOK_YAML1_DEDENT { PRS_PRINTF(("Token: TOK_YAML1_DEDENT\n")); }
+content: element
+| content element
+
+element: TOK_YAML1_DASH { PRS_PRINTF(("Token: TOK_YAML1_DASH\n")); }
+| TOK_YAML1_COLON { PRS_PRINTF(("Token: TOK_YAML1_COLON\n")); }
+| TOK_YAML1_NULL { PRS_PRINTF(("Token: TOK_YAML1_NULL\n")); }
+| TOK_YAML1_TRUE { PRS_PRINTF(("Token: TOK_YAML1_TRUE\n")); }
+| TOK_YAML1_FALSE { PRS_PRINTF(("Token: TOK_YAML1_FALSE\n")); }
+| TOK_YAML1_STR { PRS_PRINTF(("Token: TOK_YAML1_STR\n")); }
+| TOK_YAML1_INT { PRS_PRINTF(("Token: TOK_YAML1_INT\n")); }
+| TOK_YAML1_FLOAT { PRS_PRINTF(("Token: TOK_YAML1_FLOAT\n")); }
+| TOK_YAML1_NEWLINE { PRS_PRINTF(("Token: TOK_YAML1_NEWLINE\n")); }
+| TOK_YAML1_KEY { PRS_PRINTF(("Token: TOK_YAML1_KEY\n")); }
+| TOK_YAML1_INDENT { PRS_PRINTF(("Token: TOK_YAML1_INDENT\n")); }
+| TOK_YAML1_DEDENT { PRS_PRINTF(("Token: TOK_YAML1_DEDENT\n")); }
 
 %%
 const char* token_name(int t) {
