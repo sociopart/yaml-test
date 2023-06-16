@@ -157,7 +157,7 @@ YAML_KEY              {KEY}{SPACE}*{COLON}{SPACE}*
                           TOKEN_STACK_PUSH(TOK_YAML1_OBJ_END);
                           LEX_PRINTF(("[LEX] object is: %s", yytext));
                         }
-{YAML_KEY}:             {
+{YAML_KEY}{COLON}       {
                           SEND_TOKEN(TOK_YAML1_STRING);
                           SEND_TOKEN(TOK_YAML1_COLON);
                           LEX_PRINTF(("[LEX] key is: %s\n", yytext));
