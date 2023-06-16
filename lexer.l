@@ -139,9 +139,22 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
                         TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
                       }
                     }
+{SPACE}*{KEY}{SPACE}*{COLON}{SPACE}*{NEWLINE}{SPACE}*{DASH} {
+                      SEND_TOKEN(TOK_YAML1_KEY);
+                      SEND_TOKEN(TOK_YAML1_ARR_START);
+                      TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
+                      
+                      LEX_PRINTF(("[LEX] array is: %s", yytext));
+                    }
 {SPACE}*{KEY}{SPACE}*{COLON}{SPACE}*{NEWLINE}  {
+                      SEND_TOKEN(TOK_YAML1_KEY);
                       SEND_TOKEN(TOK_YAML1_OBJ_START);
                       TOKEN_STACK_PUSH(TOK_YAML1_OBJ_END);
+                      LEX_PRINTF(("[LEX] object is: %s", yytext));
+                    }
+{KEY}{SPACE}*{COLON}{SPACE}*  {
+                      SEND_TOKEN(TOK_YAML1_KEY);
+                      LEX_PRINTF(("[LEX] key is: %s\n", yytext));
                     }
 {NULL}              { LEX_PRINTF(("[LEX]VOID_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NULL); }
 {TRUE}              { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
