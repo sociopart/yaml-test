@@ -67,10 +67,18 @@ void ts_destroy(token_stack* stack) {
   yypush_parse(pstate, token, &yylval);                 \
 } while (0)
 
-#define TOKEN_STACK_PUSH(token)  {                      \
+#define TOKEN_STACK_PUSH(token) {                       \
   if (t_stack == NULL) t_stack = ts_create();           \
   ts_push(t_stack, token);                              \
 }                                                       \
+
+#define POP_N_TOKENS(amount) {                          \
+  for (int i = 0; i < amount; i++) {                    \
+      current_token = ts_pop(t_stack);                  \
+      if(current_token != -1) {                         \
+          SEND_TOKEN(current_token);                    \
+      }                                                 \
+  }                                                     \
 
 int yyinput(void) {
     return getc(yyin);
@@ -118,9 +126,7 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
                     }
 {SPACE}*{KEY}{SPACE}*{COLON}{SPACE}*{NEWLINE}  {
                     SEND_TOKEN(TOK_YAML1_OBJ_START);
-                    printf("OBJ_END is: %d\n", TOK_YAML1_OBJ_END);
                     TOKEN_STACK_PUSH(TOK_YAML1_OBJ_END);
-                    printf("Stack peek is: %d\n", ts_peek(t_stack));
                     }
 {NULL}              { LEX_PRINTF(("[LEX]VOID_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NULL); }
 {TRUE}              { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
