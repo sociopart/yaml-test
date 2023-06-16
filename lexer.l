@@ -7,7 +7,10 @@ YYSTYPE yylval;
 yypstate* pstate = NULL;
 
 #define SEND_N_TOKENS(token, amount) do {               \
-  pstate = yypstate_new();                              \
+  if (pstate == NULL)                                   \
+  {                                                     \
+    pstate = yypstate_new();                            \
+  }                                                     \
   int status = 0;                                       \
   for (int i = 0; i < amount; ++i) {                    \
     status = yypush_parse(pstate, token, &yylval);      \
@@ -16,7 +19,6 @@ yypstate* pstate = NULL;
       return status;                                    \
     }                                                   \
   }                                                     \
-  yypstate_delete(pstate);                              \
   return status;                                        \
 } while (0)
 
@@ -41,6 +43,7 @@ FLOAT_NAN         [+-]?[Nn][Aa][Nn]
 FLOAT_INF         [+-]?[Ii][Nn][Ff]
 FLOAT_NUMBER      {FLOAT_NAN}|{FLOAT_INF}|{INT_NUMBER}("."[[:digit:]]*)?([eE]{INT_NUMBER})?
 KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
+WS	[[:space:]]+
 
 %%
 
@@ -70,19 +73,25 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
                         }
                         indent_level = new_indent_level;
                     }
+
+{WS}                { /*ignore all other whitespaces*/ }
 {YAML_BLOCK_END}    { 
                       if (indent_level > 0)
                       {
                         SEND_N_TOKENS(TOK_YAML1_DEDENT, indent_level);
                       }
-                      SEND_TOKEN(TOK_YAML1_BLOCK_END); 
+                      SEND_TOKEN(TOK_YAML1_BLOCK_END);
+                      SEND_TOKEN(0);
+                      yypstate_delete(pstate);
+                      return 0; 
                     }
 <<EOF>>             {  
                       if (indent_level > 0)
                       {
                         SEND_N_TOKENS(TOK_YAML1_DEDENT, indent_level);
                       }
-                      SEND_TOKEN(TOK_YAML1_BLOCK_END); 
+                      SEND_TOKEN(0);
+                      yypstate_delete(pstate);
                       return 0;  
                     }
 .                   { /* Ignore all other characters */ }
