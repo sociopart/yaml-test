@@ -112,77 +112,81 @@ extern FILE* yyin;
 
 %option noyywrap
 
-DASH              "-"
-COLON             ":"
-SPACE             " "
-INDENT            "  "
-NULL              "null"
-TRUE              "true"
-FALSE             "false"
-NEWLINE           "\n"
-YAML_BLOCK_START  {DASH}{DASH}{DASH}{NEWLINE}
-YAML_BLOCK_END    "..."
-STRING            "\""([^\"\\]|\\.)*"\""
-INT_NUMBER        [+-]?[[:digit:]]+
-FLOAT_NAN         [+-]?[Nn][Aa][Nn]
-FLOAT_INF         [+-]?[Ii][Nn][Ff]
-FLOAT_NUMBER      {FLOAT_NAN}|{FLOAT_INF}|{INT_NUMBER}("."[[:digit:]]*)?([eE]{INT_NUMBER})?
-KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
+DASH                  "-"
+COLON                 ":"
+SPACE                 " "
+INDENT                "  "
+NULL                  "null"
+TRUE                  "true"
+FALSE                 "false"
+NEWLINE               "\n"
+YAML_BLOCK_START      {DASH}{DASH}{DASH}{NEWLINE}
+YAML_BLOCK_END        "..."
+STRING                "\""([^\"\\]|\\.)*"\""
+INT_NUMBER            [+-]?[[:digit:]]+
+FLOAT_NAN             [+-]?[Nn][Aa][Nn]
+FLOAT_INF             [+-]?[Ii][Nn][Ff]
+FLOAT_NUMBER          {FLOAT_NAN}|{FLOAT_INF}|{INT_NUMBER}("."[[:digit:]]*)?([eE]{INT_NUMBER})?
+KEY                   [a-zA-Z_][a-zA-Z0-9_\-]*
+YAML_ARRAY_DASH       {DASH}{SPACE}+ 
+YAML_KEY_ARRAY_PAIR   {SPACE}*{KEY}{SPACE}*{COLON}{SPACE}*{NEWLINE}{SPACE}*{DASH}
+YAML_KEY_OBJECT_PAIR  {SPACE}*{KEY}{SPACE}*{COLON}{SPACE}*{NEWLINE}
+YAML_KEY              {KEY}{SPACE}*{COLON}{SPACE}*
 
 %%
 
-{YAML_BLOCK_START}  { LEX_PRINTF(("[LEX]YAML_START\n")); SEND_TOKEN(TOK_YAML1_BLOCK_START); }
-{DASH}{SPACE}+      {
-                      if (ts_peek(t_stack) != TOK_YAML1_ARR_END)
-                      {
-                        SEND_TOKEN(TOK_YAML1_ARR_START);
-                        TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
-                      }
-                    }
-{SPACE}*{KEY}{SPACE}*{COLON}{SPACE}*{NEWLINE}{SPACE}*{DASH} {
-                      SEND_TOKEN(TOK_YAML1_KEY);
-                      SEND_TOKEN(TOK_YAML1_ARR_START);
-                      TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
-                      
-                      LEX_PRINTF(("[LEX] array is: %s", yytext));
-                    }
-{SPACE}*{KEY}{SPACE}*{COLON}{SPACE}*{NEWLINE}  {
-                      SEND_TOKEN(TOK_YAML1_KEY);
-                      SEND_TOKEN(TOK_YAML1_OBJ_START);
-                      TOKEN_STACK_PUSH(TOK_YAML1_OBJ_END);
-                      LEX_PRINTF(("[LEX] object is: %s", yytext));
-                    }
-{KEY}{SPACE}*{COLON}{SPACE}*  {
-                      SEND_TOKEN(TOK_YAML1_KEY);
-                      LEX_PRINTF(("[LEX] key is: %s\n", yytext));
-                    }
-{NULL}              { LEX_PRINTF(("[LEX]VOID_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NULL); }
-{TRUE}              { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
-{FALSE}             { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
-{STRING}            { LEX_PRINTF(("[LEX]STR_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_STRING); }
-{INT_NUMBER}        { LEX_PRINTF(("[LEX]INT_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_NUMBER); }
-{FLOAT_NUMBER}      { LEX_PRINTF(("[LEX]FLT_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_NUMBER); }
-{NEWLINE}           { LEX_PRINTF(("[LEX]NEWLINE\n"));                SEND_TOKEN(TOK_YAML1_NEWLINE); }
-{INDENT}+           {  
-                        int new_indent_level = yyleng / 2;
-                        int diff = new_indent_level - indent_level;
-                        if (diff < 0)
-                        {
-                          STACK_POP_N_TOKENS(-diff);
+{YAML_BLOCK_START}      { LEX_PRINTF(("[LEX]YAML_START\n")); SEND_TOKEN(TOK_YAML1_BLOCK_START); }
+{YAML_ARRAY_DASH}       {
+                          if (ts_peek(t_stack) != TOK_YAML1_ARR_END)
+                          {
+                            SEND_TOKEN(TOK_YAML1_ARR_START);
+                            TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
+                          }
                         }
-                        indent_level = new_indent_level;
-                    }
-{YAML_BLOCK_END}    {
-                      STACK_POP_N_TOKENS(indent_level);
-                      indent_level = 0;
-                      CLEANUP();
-                      return TOK_YAML1_BLOCK_END; 
-                    }
-<<EOF>>             {  
-                      STACK_POP_N_TOKENS(indent_level);
-                      indent_level = 0;
-                      SEND_TOKEN(TOK_YAML1_BLOCK_END);
-                      CLEANUP();
-                      return 0;  
-                    }
-.                   { /* Ignore all other characters */ }
+{YAML_KEY_ARRAY_PAIR}   {
+                          SEND_TOKEN(TOK_YAML1_KEY);
+                          SEND_TOKEN(TOK_YAML1_ARR_START);
+                          TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
+                          
+                          LEX_PRINTF(("[LEX] array is: %s", yytext));
+                        }
+{YAML_KEY_OBJECT_PAIR}  {
+                          SEND_TOKEN(TOK_YAML1_KEY);
+                          SEND_TOKEN(TOK_YAML1_OBJ_START);
+                          TOKEN_STACK_PUSH(TOK_YAML1_OBJ_END);
+                          LEX_PRINTF(("[LEX] object is: %s", yytext));
+                        }
+{YAML_KEY}              {
+                          SEND_TOKEN(TOK_YAML1_KEY);
+                          LEX_PRINTF(("[LEX] key is: %s\n", yytext));
+                        }
+{NULL}                  { LEX_PRINTF(("[LEX]VOID_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NULL); }
+{TRUE}                  { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
+{FALSE}                 { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
+{STRING}                { LEX_PRINTF(("[LEX]STR_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_STRING); }
+{INT_NUMBER}            { LEX_PRINTF(("[LEX]INT_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_NUMBER); }
+{FLOAT_NUMBER}          { LEX_PRINTF(("[LEX]FLT_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_NUMBER); }
+{NEWLINE}               { LEX_PRINTF(("[LEX]NEWLINE\n"));                SEND_TOKEN(TOK_YAML1_NEWLINE); }
+{INDENT}+               {  
+                          int new_indent_level = yyleng / 2;
+                          int diff = new_indent_level - indent_level;
+                          if (diff < 0)
+                          {
+                            STACK_POP_N_TOKENS(-diff);
+                          }
+                          indent_level = new_indent_level;
+                        }
+{YAML_BLOCK_END}        {
+                          STACK_POP_N_TOKENS(indent_level);
+                          indent_level = 0;
+                          CLEANUP();
+                          return TOK_YAML1_BLOCK_END; 
+                        }
+<<EOF>>                 {  
+                          STACK_POP_N_TOKENS(indent_level);
+                          indent_level = 0;
+                          SEND_TOKEN(TOK_YAML1_BLOCK_END);
+                          CLEANUP();
+                          return 0;  
+                        }
+.                       { /* Ignore all other characters */ }
