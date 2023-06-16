@@ -5,6 +5,10 @@
 extern int indent_level;
 YYSTYPE yylval;
 yypstate *pstate = NULL;
+extern FILE* yyin;
+int yyinput(void) {
+    return getc(yyin);
+}
 
 //#define LEX_DBG
 #ifdef LEX_DBG
@@ -55,7 +59,21 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
 %%
 
 {YAML_BLOCK_START}  { LEX_PRINTF(("[LEX]YAML_START\n")); SEND_TOKEN(TOK_YAML1_BLOCK_START); }
-{DASH}              { LEX_PRINTF(("[LEX]DASH\n")); SEND_TOKEN(TOK_YAML1_DASH); }
+{DASH}{SPACE}+     {
+                      int next_char = input();
+                      
+                      LEX_PRINTF(("[LEX]DASH\n")); 
+                      SEND_TOKEN(TOK_YAML1_DASH);
+                      // If no newline defined, then insert it as a token.
+                      if (next_char != '\n') {
+                          // Get back to DASH position
+                          
+                          LEX_PRINTF(("[LEX]NEWLINE\n")); 
+                          SEND_TOKEN(TOK_YAML1_NEWLINE);
+                          indent_level++;
+                      }
+                      unput(next_char);
+                    }
 {COLON}             { LEX_PRINTF(("[LEX]COLON\n")); SEND_TOKEN(TOK_YAML1_COLON); }
 {NULL}              { LEX_PRINTF(("[LEX]VOID_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NULL); }
 {TRUE}              { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_TRUE); }
@@ -63,11 +81,11 @@ KEY               [a-zA-Z_][a-zA-Z0-9_\-]*
 {STRING}            { LEX_PRINTF(("[LEX]STR_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_STR); }
 {INT_NUMBER}        { LEX_PRINTF(("[LEX]INT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_INT); }
 {FLOAT_NUMBER}      { LEX_PRINTF(("[LEX]FLT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_FLOAT); }
-{NEWLINE}           { LEX_PRINTF(("[LEX]NEWLINE\n")); SEND_TOKEN(TOK_YAML1_NEWLINE); }
 {KEY}               {
                       LEX_PRINTF(("[LEX]KEY: %s\n", yytext));
                       SEND_TOKEN(TOK_YAML1_KEY);
                     }
+{NEWLINE}           { LEX_PRINTF(("[LEX]NEWLINE\n")); SEND_TOKEN(TOK_YAML1_NEWLINE); }
 {INDENT}+           {  
                         int new_indent_level = yyleng / 2;
                         int diff = new_indent_level - indent_level;
