@@ -36,7 +36,12 @@ void output_token(const char* nonTerminal, const char* tokenType, const char* va
 
 %% /* The grammar follows.  */
 
-yaml1: element { printf("Parsing completed successfully.\n"); }
+yaml1: TOK_YAML1_BLOCK_START element TOK_YAML1_BLOCK_END
+  | TOK_YAML1_BLOCK_END element
+  | element TOK_YAML1_BLOCK_END
+  | element
+
+element { printf("Parsing completed successfully.\n"); }
 
 element: value
 
