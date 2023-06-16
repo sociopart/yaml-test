@@ -5,7 +5,7 @@ extern int yylineno;
 extern char* yytext;
 extern FILE* yyin;
 
-#define PRS_DBG
+//#define PRS_DBG
 #ifdef PRS_DBG
   #define PRS_PRINTF(pargs)    printf pargs
 #else
@@ -36,26 +36,26 @@ int indent_level = 0;
 
 %%
 
-yaml: TOK_YAML1_BLOCK_START element TOK_YAML1_BLOCK_END {printf("YS-EL-YE\n");}
-    | TOK_YAML1_BLOCK_START element {printf("YS-EL\n");}
-    | element TOK_YAML1_BLOCK_END {printf("EL-YE\n");}
-    | element {printf("EL-ONLY\n");}
+yaml: TOK_YAML1_BLOCK_START element TOK_YAML1_BLOCK_END {PRS_PRINTF(("YS-EL-YE\n"));}
+    | TOK_YAML1_BLOCK_START element {PRS_PRINTF(("YS-EL\n"));}
+    | element TOK_YAML1_BLOCK_END {PRS_PRINTF(("EL-YE\n"));}
+    | element {PRS_PRINTF(("EL-ONLY\n"));}
 
 element: value
 
-value: mapping {printf("MAPPING found %s\n", yytext);}
-       | sequence {printf("SEQUENCE found %s\n", yytext);}
-       | TOK_YAML1_STRING {printf("STRING found %s\n", yytext);}
-       | TOK_YAML1_NUMBER {printf("NUMBER found %s\n", yytext);}
-       | TOK_YAML1_NULL   {printf("NULL found\n");}
+value: mapping {PRS_PRINTF(("MAPPING found %s\n", yytext));}
+       | sequence {PRS_PRINTF(("SEQUENCE found %s\n", yytext));}
+       | TOK_YAML1_STRING {PRS_PRINTF(("STRING found %s\n", yytext));}
+       | TOK_YAML1_NUMBER {PRS_PRINTF(("NUMBER found %s\n", yytext));}
+       | TOK_YAML1_NULL   {PRS_PRINTF(("NULL found\n"));}
 
-mapping: TOK_YAML1_INDENT TOK_YAML1_KEY value {printf("MAPPING found\n");}
-       | TOK_YAML1_INDENT TOK_YAML1_KEY mapping {printf("MAPPING found\n");}
-       | TOK_YAML1_INDENT TOK_YAML1_KEY sequence {printf("MAPPING found\n");}
+mapping: TOK_YAML1_INDENT TOK_YAML1_KEY value {PRS_PRINTF(("MAPPING found\n"));}
+       | TOK_YAML1_INDENT TOK_YAML1_KEY mapping {PRS_PRINTF(("MAPPING found\n"));}
+       | TOK_YAML1_INDENT TOK_YAML1_KEY sequence {PRS_PRINTF(("MAPPING found\n"));}
 
-sequence: TOK_YAML1_INDENT TOK_YAML1_DASH value {printf("SEQUENCE found\n");}
-        | TOK_YAML1_INDENT TOK_YAML1_DASH mapping {printf("SEQUENCE found\n");}
-        | TOK_YAML1_INDENT TOK_YAML1_DASH sequence {printf("SEQUENCE found\n");}
+sequence: TOK_YAML1_INDENT TOK_YAML1_DASH value {PRS_PRINTF(("SEQUENCE found\n"));}
+        | TOK_YAML1_INDENT TOK_YAML1_DASH mapping {PRS_PRINTF(("SEQUENCE found\n"));}
+        | TOK_YAML1_INDENT TOK_YAML1_DASH sequence {PRS_PRINTF(("SEQUENCE found\n"));}
 
 %%
 
