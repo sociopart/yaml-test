@@ -5,13 +5,23 @@ extern int yylineno;
 extern char* yytext;
 extern FILE* yyin;
 
+#define PRS_DBG
+#ifdef PRS_DBG
+  #define PRS_PRINTF(pargs)    printf pargs
+#else
+  #define PRS_PRINTF(pargs)    (void)(0)
+#endif
+
 void yyerror(const char* message) {
     fprintf(stderr, "Parser error at line %d: %s\n", yylineno, message);
 }
 
 int indent_level = 0;
 %}
-
+%union {
+  char* str_val;
+}
+%defines
 %define parse.trace
 %define api.pure full
 %define api.push-pull push
@@ -27,24 +37,24 @@ int indent_level = 0;
 %%
 
 start:
-    | start statement { printf("--Start of new statement--\n"); }
+    | start statement { PRS_PRINTF(("--Start of new statement--\n")); }
     ;
 
 statement:
-    TOK_YAML1_BLOCK_START { printf("Token: TOK_YAML1_BLOCK_START\n"); }
-    | TOK_YAML1_BLOCK_END { printf("Token: TOK_YAML1_BLOCK_END\n"); }
-    | TOK_YAML1_DASH { printf("Token: TOK_YAML1_DASH\n"); }
-    | TOK_YAML1_COLON { printf("Token: TOK_YAML1_COLON\n"); }
-    | TOK_YAML1_NULL { printf("Token: TOK_YAML1_NULL\n"); }
-    | TOK_YAML1_TRUE { printf("Token: TOK_YAML1_TRUE\n"); }
-    | TOK_YAML1_FALSE { printf("Token: TOK_YAML1_FALSE\n"); }
-    | TOK_YAML1_STR { printf("Token: TOK_YAML1_STR\n"); }
-    | TOK_YAML1_INT { printf("Token: TOK_YAML1_INT\n"); }
-    | TOK_YAML1_FLOAT { printf("Token: TOK_YAML1_FLOAT\n"); }
-    | TOK_YAML1_NEWLINE { printf("Token: TOK_YAML1_NEWLINE\n"); }
-    | TOK_YAML1_KEY { printf("Token: TOK_YAML1_KEY\n"); }
-    | TOK_YAML1_INDENT { printf("Token: TOK_YAML1_INDENT\n"); }
-    | TOK_YAML1_DEDENT { printf("Token: TOK_YAML1_DEDENT\n"); }
+    TOK_YAML1_BLOCK_START { PRS_PRINTF(("Token: TOK_YAML1_BLOCK_START\n")); }
+    | TOK_YAML1_BLOCK_END { PRS_PRINTF(("Token: TOK_YAML1_BLOCK_END\n")); }
+    | TOK_YAML1_DASH { PRS_PRINTF(("Token: TOK_YAML1_DASH\n")); }
+    | TOK_YAML1_COLON { PRS_PRINTF(("Token: TOK_YAML1_COLON\n")); }
+    | TOK_YAML1_NULL { PRS_PRINTF(("Token: TOK_YAML1_NULL\n")); }
+    | TOK_YAML1_TRUE { PRS_PRINTF(("Token: TOK_YAML1_TRUE\n")); }
+    | TOK_YAML1_FALSE { PRS_PRINTF(("Token: TOK_YAML1_FALSE\n")); }
+    | TOK_YAML1_STR { PRS_PRINTF(("Token: TOK_YAML1_STR\n")); }
+    | TOK_YAML1_INT { PRS_PRINTF(("Token: TOK_YAML1_INT\n")); }
+    | TOK_YAML1_FLOAT { PRS_PRINTF(("Token: TOK_YAML1_FLOAT\n")); }
+    | TOK_YAML1_NEWLINE { PRS_PRINTF(("Token: TOK_YAML1_NEWLINE\n")); }
+    | TOK_YAML1_KEY { PRS_PRINTF(("Token: TOK_YAML1_KEY\n")); }
+    | TOK_YAML1_INDENT { PRS_PRINTF(("Token: TOK_YAML1_INDENT\n")); }
+    | TOK_YAML1_DEDENT { PRS_PRINTF(("Token: TOK_YAML1_DEDENT\n")); }
     ;
 
 %%

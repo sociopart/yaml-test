@@ -6,6 +6,20 @@ extern int indent_level;
 YYSTYPE yylval;
 yypstate* pstate = NULL;
 
+//#define LEX_DBG
+#ifdef LEX_DBG
+  #define LEX_PRINTF(pargs)    printf pargs
+  #define LEX_PRINTF_N(n, pargs) do { \
+    for (int i = 0; i < n; ++i)       \
+    {                                 \
+      printf pargs;                    \
+    }                                 \
+  } while(0)
+#else
+  #define LEX_PRINTF(pargs)         (void)(0)
+  #define LEX_PRINTF_N(n, pargs)    (void)(0)
+#endif
+
 #define SEND_N_TOKENS(token, amount) do {               \
   if (pstate == NULL)                                   \
   {                                                     \
@@ -47,19 +61,19 @@ WS	[[:space:]]+
 
 %%
 
-{YAML_BLOCK_START}  { printf("YAML_START\n"); SEND_TOKEN(TOK_YAML1_BLOCK_START); }
-{DASH}              { printf("DASH\n"); SEND_TOKEN(TOK_YAML1_DASH); }
-{COLON}             { printf("COLON\n"); SEND_TOKEN(TOK_YAML1_COLON); }
-{NULL}              { printf("VOID_VALUE: %s\n", yytext); SEND_TOKEN(TOK_YAML1_NULL); }
-{TRUE}              { printf("BOOL_VALUE: %s\n", yytext); SEND_TOKEN(TOK_YAML1_TRUE); }
-{FALSE}             { printf("BOOL_VALUE: %s\n", yytext); SEND_TOKEN(TOK_YAML1_FALSE); }
-{STRING}            { printf("STR_VALUE: %s\n", yytext); SEND_TOKEN(TOK_YAML1_STR); }
-{INT_NUMBER}        { printf("INT_VALUE: %s\n", yytext); SEND_TOKEN(TOK_YAML1_INT); }
-{FLOAT_NUMBER}      { printf("FLT_VALUE: %s\n", yytext); SEND_TOKEN(TOK_YAML1_FLOAT); }
-{NEWLINE}           { printf("NEWLINE\n"); SEND_TOKEN(TOK_YAML1_NEWLINE); }
+{YAML_BLOCK_START}  { LEX_PRINTF(("[LEX]YAML_START\n")); SEND_TOKEN(TOK_YAML1_BLOCK_START); }
+{DASH}              { LEX_PRINTF(("[LEX]DASH\n")); SEND_TOKEN(TOK_YAML1_DASH); }
+{COLON}             { LEX_PRINTF(("[LEX]COLON\n")); SEND_TOKEN(TOK_YAML1_COLON); }
+{NULL}              { LEX_PRINTF(("[LEX]VOID_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NULL); }
+{TRUE}              { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_TRUE); }
+{FALSE}             { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_FALSE); }
+{STRING}            { LEX_PRINTF(("[LEX]STR_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_STR); }
+{INT_NUMBER}        { LEX_PRINTF(("[LEX]INT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_INT); }
+{FLOAT_NUMBER}      { LEX_PRINTF(("[LEX]FLT_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_FLOAT); }
+{NEWLINE}           { LEX_PRINTF(("[LEX]NEWLINE\n")); SEND_TOKEN(TOK_YAML1_NEWLINE); }
 {KEY}{COLON}        {
                       yytext[yyleng - 1] = '\0';  // Set the last symbol to null terminator
-                      printf("KEY: %s\n", yytext);
+                      LEX_PRINTF(("[LEX]KEY: %s\n", yytext));
                       SEND_TOKEN(TOK_YAML1_KEY);
                     }
 {INDENT}+           {  
@@ -68,8 +82,10 @@ WS	[[:space:]]+
                         int diff = new_indent_level - indent_level;
                         if (diff > 0) {
                           SEND_N_TOKENS(TOK_YAML1_INDENT, diff);
+                          LEX_PRINTF_N(diff, ("[LEX] INDENT\n"));
                         } else if (diff < 0) {
                           SEND_N_TOKENS(TOK_YAML1_DEDENT, -diff);
+                          LEX_PRINTF_N(diff, ("[LEX] DEDENT\n"));
                         }
                         indent_level = new_indent_level;
                     }
@@ -79,6 +95,7 @@ WS	[[:space:]]+
                       if (indent_level > 0)
                       {
                         SEND_N_TOKENS(TOK_YAML1_DEDENT, indent_level);
+                        LEX_PRINTF_N(diff, ("[LEX] DEDENT\n"));
                       }
                       SEND_TOKEN(TOK_YAML1_BLOCK_END);
                       SEND_TOKEN(0);
@@ -89,6 +106,7 @@ WS	[[:space:]]+
                       if (indent_level > 0)
                       {
                         SEND_N_TOKENS(TOK_YAML1_DEDENT, indent_level);
+                        LEX_PRINTF_N(diff, ("[LEX] DEDENT\n"));
                       }
                       SEND_TOKEN(0);
                       yypstate_delete(pstate);
