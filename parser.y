@@ -39,17 +39,17 @@ content: element
 
 element: 
   TOK_YAML1_COLON       { printf(":"); }
-| TOK_YAML1_NULL        { printf("[%s]\n", yytext); }
-| TOK_YAML1_STRING      { printf("[%s]\n", yytext); }
-| TOK_YAML1_NUMBER      { printf("[%s]\n", yytext); }
-| TOK_YAML1_NEWLINE     { INDENTED_PRINTF(indent_level, ",\n"); }
-| TOK_YAML1_KEY         { INDENTED_PRINTF(indent_level, "[%s]", yytext); }
+| TOK_YAML1_NULL        { printf("%s\n", yytext); }
+| TOK_YAML1_STRING      { printf("%s\n", yytext); }
+| TOK_YAML1_NUMBER      { printf("%s\n", yytext); }
+| TOK_YAML1_NEWLINE     { INDENTED_PRINTF(indent_level, ","); }
+| TOK_YAML1_KEY         { INDENTED_PRINTF(indent_level, "\"%s\"", yytext); }
 | TOK_YAML1_OBJ_START   { INDENTED_PRINTF(indent_level, "{\n"); }
 | TOK_YAML1_OBJ_END     { INDENTED_PRINTF(indent_level, "}\n"); }
 | TOK_YAML1_ARR_START   { INDENTED_PRINTF(indent_level, "[\n"); }
 | TOK_YAML1_ARR_END     { INDENTED_PRINTF(indent_level, "]\n"); }
-| TOK_YAML1_BLOCK_START { INDENTED_PRINTF(indent_level, "---\n"); }
-| TOK_YAML1_BLOCK_END   { INDENTED_PRINTF(indent_level, "...\n"); }
+| TOK_YAML1_BLOCK_START { INDENTED_PRINTF(indent_level, "\n"); }
+| TOK_YAML1_BLOCK_END   { INDENTED_PRINTF(indent_level, "\n"); }
 
 %%
 
