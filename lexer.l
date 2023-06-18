@@ -136,14 +136,14 @@ YAML_KEY              {KEY}
 
 %%
 
-{NULL}                  { LEX_PRINTF(("[LEX]VOID_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NULL); }
-{TRUE}                  { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
-{FALSE}                 { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
-{STRING}                { LEX_PRINTF(("[LEX]STR_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_STRING); }
-{INT_NUMBER}            { LEX_PRINTF(("[LEX]INT_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_NUMBER); }
-{FLOAT_NUMBER}          { LEX_PRINTF(("[LEX]FLT_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_NUMBER); }
+{NULL}                  { SEND_TOKEN(TOK_YAML1_NULL); }
+{TRUE}                  { SEND_TOKEN(TOK_YAML1_NUMBER); }
+{FALSE}                 { SEND_TOKEN(TOK_YAML1_NUMBER); }
+{STRING}                { SEND_TOKEN(TOK_YAML1_STRING); }
+{INT_NUMBER}            { SEND_TOKEN(TOK_YAML1_NUMBER); }
+{FLOAT_NUMBER}          { SEND_TOKEN(TOK_YAML1_NUMBER); }
 {NEWLINE}               { BEGIN(NL_STATE); }
-{YAML_BLOCK_START}      { LEX_PRINTF(("[LEX]YAML_START\n")); SEND_TOKEN(TOK_YAML1_BLOCK_START); }
+{YAML_BLOCK_START}      { SEND_TOKEN(TOK_YAML1_BLOCK_START); }
 {YAML_ARRAY_DASH}       {
                           if (ts_peek(t_stack) != TOK_YAML1_ARR_END)
                           {
@@ -156,7 +156,8 @@ YAML_KEY              {KEY}
                             If something was present after a nested 
                             struct / array, then add a separator between elems.
                           */
-                          if (last_pushed_token == TOK_YAML1_ARR_END || last_pushed_token == TOK_YAML1_OBJ_END)
+                          if (last_pushed_token == TOK_YAML1_ARR_END \
+                          || last_pushed_token == TOK_YAML1_OBJ_END)
                           {
                             SEND_TOKEN(TOK_YAML1_NEWLINE);
                           }
@@ -171,7 +172,7 @@ YAML_KEY              {KEY}
   /* ------------------------ Handling NEWLINE_STATE ------------------------ */
 <NL_STATE>{INDENT}+     {
                           int new_indent_level = yyleng / 2;
-                          int diff = new_indent_level - indent_level;
+                          int diff = (new_indent_level - indent_level);
                           /* 
                             If indentation level wasn't changed, then next
                             element exists and belongs to current struct.
@@ -190,6 +191,7 @@ YAML_KEY              {KEY}
                         }
 <NL_STATE>.             {
                           /* Get back in any other situation. */
+                          REJECT;
                           BEGIN(INITIAL);
                         }
   /* ------------------------------------------------------------------------ */
