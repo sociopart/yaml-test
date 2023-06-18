@@ -83,6 +83,7 @@ void ts_destroy(token_stack* stack) {
     pstate = yypstate_new();                            \
   }                                                     \
   yypush_parse(pstate, token, &yylval);                 \
+  last_pushed_token = token;                            \
 } while (0)
 
 #define CLEANUP()                                       \
@@ -101,7 +102,7 @@ int yyinput(void) {
 }
 
 int indent_level = 0;
-int object_need_resolve = 0;
+int last_pushed_token = -1;
 token_stack* t_stack = NULL;
 
 YYSTYPE yylval;
@@ -151,6 +152,14 @@ YAML_KEY              {KEY}
                           }
                         }
 {YAML_KEY}              {
+                          /* 
+                            If something was present after a nested 
+                            struct / array, then add a separator between elems.
+                          */
+                          if (last_pushed_token == TOK_YAML1_ARR_END || last_pushed_token == TOK_YAML1_OBJ_END)
+                          {
+                            SEND_TOKEN(TOK_YAML1_NEWLINE);
+                          }
                           SEND_TOKEN(TOK_YAML1_KEY);
                           LEX_PRINTF(("[LEX] key is: %s\n", yytext));
                         }
@@ -172,12 +181,15 @@ YAML_KEY              {KEY}
                             LEX_PRINTF(("[LEX]NEWLINE\n"));
                             SEND_TOKEN(TOK_YAML1_NEWLINE);
                           }
-                          else {
-                            REJECT;
+                          else if (diff < 0)
+                          {
+                            STACK_POP_N_TOKENS(-diff);
                           }
-                          BEGIN(INITIAL);
+                          indent_level = new_indent_level;
+                          BEGIN(INITIAL); /* Get back anyways. */
                         }
 <NL_STATE>.             {
+                          /* Get back in any other situation. */
                           BEGIN(INITIAL);
                         }
   /* ------------------------------------------------------------------------ */
@@ -195,7 +207,7 @@ YAML_KEY              {KEY}
                           BEGIN(INITIAL);
                         }
 <KEY_STATE>.            {
-                            BEGIN(INITIAL);
+                          BEGIN(INITIAL);
                         }
   /* ------------------------------------------------------------------------ */
 {INDENT}+               {  
