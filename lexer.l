@@ -111,9 +111,7 @@ yypstate *pstate = NULL;
 extern FILE* yyin;
 // -----------------------------------------------------------------------------
 %}
-
 %option noyywrap
-%x KEY_STATE NL_STATE
 
 DASH                  "-"
 COLON                 ":"
@@ -131,7 +129,6 @@ FLOAT_NAN             [+-]?[Nn][Aa][Nn]
 FLOAT_INF             [+-]?[Ii][Nn][Ff]
 FLOAT_NUMBER          {FLOAT_NAN}|{FLOAT_INF}|{INT_NUMBER}("."[[:digit:]]*)?([eE]{INT_NUMBER})?
 KEY                   [a-zA-Z_][a-zA-Z0-9_\-]*
-YAML_ARRAY_DASH       {DASH}
 ARR_START             {DASH}{SPACE}
 %%
 
@@ -143,13 +140,19 @@ ARR_START             {DASH}{SPACE}
 {FLOAT_NUMBER}          { SEND_TOKEN(TOK_YAML1_NUMBER); }
 {COLON}                 { SEND_TOKEN(TOK_YAML1_COLON);}
 {ARR_START}             {
+                          /*
+                            Nested array should have the name (so last token
+                            would be a colon).
+                            Also, array element can be very first element of
+                            file.
+                          */
                           if (ts_peek(t_stack) != TOK_YAML1_ARR_END \
                             || last_pushed_token == TOK_YAML1_COLON)
                             {
                               SEND_TOKEN(TOK_YAML1_ARR_START);
                               TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
                             }
-}
+                        }
 {NEWLINE}{INDENT}+{ARR_START}*       { 
                           int new_indent_level = (yyleng - 1) / 2;
                           int diff = new_indent_level - indent_level;
@@ -159,6 +162,11 @@ ARR_START             {DASH}{SPACE}
                           */
                           if (diff == 0) { SEND_TOKEN(TOK_YAML1_NEWLINE); }
                           else if (diff < 0) { STACK_POP_N_TOKENS(-diff); }
+                          /*
+                            Bad magic done with indentation level.
+                            Now I can't move the dash processing logic elsewhere
+                            because of indent level update process.
+                          */
                           if (yytext[yyleng - 2] == '-')
                           {
                             if (ts_peek(t_stack) != TOK_YAML1_ARR_END \
@@ -169,10 +177,15 @@ ARR_START             {DASH}{SPACE}
                             }
                           }
                           indent_level = new_indent_level;
-                          //printf("indent level is: %d\n", indent_level);
                         }
 {YAML_BLOCK_START}      { SEND_TOKEN(TOK_YAML1_BLOCK_START); }
 {KEY}                   {
+                          /*
+                            - If a structure was packed inside an array,
+                              last pushed token would be an ARRAY_START marker.
+                            - If a structure was packed inside another struct,
+                              last pushed token would be a COLON marker.
+                          */
                           if (last_pushed_token == TOK_YAML1_ARR_START \
                           || last_pushed_token == TOK_YAML1_COLON){
                             SEND_TOKEN(TOK_YAML1_OBJ_START);
