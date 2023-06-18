@@ -32,7 +32,9 @@ void yyerror(const char* message) {
 
 yaml1: document
 
-document: element
+document: TOK_YAML1_BLOCK_START element TOK_YAML1_BLOCK_END
+  | element TOK_YAML1_BLOCK_END
+  | element
 
 element: value 
 

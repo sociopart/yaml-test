@@ -102,7 +102,6 @@ int yyinput(void) {
 
 int indent_level = 0;
 int last_pushed_token = -1;
-int might_be_nested = 0;
 token_stack* t_stack = NULL;
 
 YYSTYPE yylval;
