@@ -142,6 +142,14 @@ ARR_START             {DASH}{SPACE}
 {INT_NUMBER}            { SEND_TOKEN(TOK_YAML1_NUMBER); }
 {FLOAT_NUMBER}          { SEND_TOKEN(TOK_YAML1_NUMBER); }
 {COLON}                 { SEND_TOKEN(TOK_YAML1_COLON);}
+{ARR_START}             {
+                          if (ts_peek(t_stack) != TOK_YAML1_ARR_END \
+                            || last_pushed_token == TOK_YAML1_COLON)
+                            {
+                              SEND_TOKEN(TOK_YAML1_ARR_START);
+                              TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
+                            }
+}
 {NEWLINE}{INDENT}+{ARR_START}*       { 
                           int new_indent_level = (yyleng - 1) / 2;
                           int diff = new_indent_level - indent_level;
