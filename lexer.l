@@ -228,7 +228,7 @@ YAML_KEY              {KEY}
 <<EOF>>                 {  
                           STACK_POP_N_TOKENS(indent_level);
                           indent_level = 0;
-                          SEND_TOKEN(TOK_YAML1_BLOCK_END);
+                          //SEND_TOKEN(TOK_YAML1_BLOCK_END);
                           CLEANUP();
                           return 0;  
                         }

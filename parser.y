@@ -4,7 +4,7 @@ extern int yylex();
 extern int yylineno;
 extern char* yytext;
 extern FILE* yyin;
-
+extern int last_pushed_token;
 void yyerror(const char* message) {
     fprintf(stderr, "Parser error at line %d: %s\n", yylineno, message);
 
@@ -22,12 +22,10 @@ void yyerror(const char* message) {
 %define api.push-pull push
 
 %token TOK_YAML1_BLOCK_START TOK_YAML1_BLOCK_END
-%token TOK_YAML1_INDENT TOK_YAML1_DEDENT
-%token TOK_YAML1_NULL TOK_YAML1_TRUE TOK_YAML1_FALSE
-%token TOK_YAML1_DASH TOK_YAML1_COLON TOK_YAML1_NEWLINE TOK_YAML1_KEY BLOCK_END
-%token TOK_YAML1_STRING TOK_YAML1_NUMBER
-%token TOK_YAML1_OBJ_START TOK_YAML1_ARR_START
-%token TOK_YAML1_OBJ_END TOK_YAML1_ARR_END
+%token TOK_YAML1_COLON TOK_YAML1_NEWLINE
+%token TOK_YAML1_OBJ_START TOK_YAML1_OBJ_END
+%token TOK_YAML1_ARR_START TOK_YAML1_ARR_END
+%token TOK_YAML1_NULL TOK_YAML1_KEY TOK_YAML1_STRING TOK_YAML1_NUMBER
 
 %%
 statement: content
@@ -35,8 +33,8 @@ statement: content
 content: element
 | content element
 
-element: TOK_YAML1_DASH { PRS_PRINTF(("Token: TOK_YAML1_DASH\n")); }
-| TOK_YAML1_COLON       { PRS_PRINTF(("Token: TOK_YAML1_COLON\n")); }
+element: 
+  TOK_YAML1_COLON       { PRS_PRINTF(("Token: TOK_YAML1_COLON\n")); }
 | TOK_YAML1_NULL        { PRS_PRINTF(("Token: TOK_YAML1_NULL\n")); }
 | TOK_YAML1_STRING      { PRS_PRINTF(("Token: TOK_YAML1_STRING\n")); }
 | TOK_YAML1_NUMBER      { PRS_PRINTF(("Token: TOK_YAML1_NUMBER\n")); }
