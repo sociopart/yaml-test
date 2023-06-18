@@ -4,7 +4,11 @@ extern int yylex();
 extern int yylineno;
 extern char* yytext;
 extern FILE* yyin;
-
+extern int indent_level;
+#define INDENTED_PRINTF(indent_level, format, ...) do { \
+    printf("%*s", (indent_level) * 4, ""); \
+    printf(format, ##__VA_ARGS__); \
+} while(0)
 void yyerror(const char* message) {
     fprintf(stderr, "Parser error at line %d: %s\n", yylineno, message);
 
@@ -22,12 +26,10 @@ void yyerror(const char* message) {
 %define api.push-pull push
 
 %token TOK_YAML1_BLOCK_START TOK_YAML1_BLOCK_END
-%token TOK_YAML1_INDENT TOK_YAML1_DEDENT
-%token TOK_YAML1_NULL TOK_YAML1_TRUE TOK_YAML1_FALSE
-%token TOK_YAML1_DASH TOK_YAML1_COLON TOK_YAML1_NEWLINE TOK_YAML1_KEY BLOCK_END
-%token TOK_YAML1_STRING TOK_YAML1_NUMBER
-%token TOK_YAML1_OBJ_START TOK_YAML1_ARR_START
-%token TOK_YAML1_OBJ_END TOK_YAML1_ARR_END
+%token TOK_YAML1_COLON TOK_YAML1_NEWLINE
+%token TOK_YAML1_OBJ_START TOK_YAML1_OBJ_END
+%token TOK_YAML1_ARR_START TOK_YAML1_ARR_END
+%token TOK_YAML1_NULL TOK_YAML1_KEY TOK_YAML1_STRING TOK_YAML1_NUMBER
 
 %%
 statement: content
@@ -35,19 +37,19 @@ statement: content
 content: element
 | content element
 
-element: TOK_YAML1_DASH { PRS_PRINTF(("Token: TOK_YAML1_DASH\n")); }
-| TOK_YAML1_COLON       { PRS_PRINTF(("Token: TOK_YAML1_COLON\n")); }
-| TOK_YAML1_NULL        { PRS_PRINTF(("Token: TOK_YAML1_NULL\n")); }
-| TOK_YAML1_STRING      { PRS_PRINTF(("Token: TOK_YAML1_STRING\n")); }
-| TOK_YAML1_NUMBER      { PRS_PRINTF(("Token: TOK_YAML1_NUMBER\n")); }
-| TOK_YAML1_NEWLINE     { PRS_PRINTF(("Token: TOK_YAML1_NEWLINE\n")); }
-| TOK_YAML1_KEY         { PRS_PRINTF(("Token: TOK_YAML1_KEY\n")); }
-| TOK_YAML1_OBJ_START   { PRS_PRINTF(("Token: TOK_YAML1_OBJ_START\n")); }
-| TOK_YAML1_OBJ_END     { PRS_PRINTF(("Token: TOK_YAML1_OBJ_END\n")); }
-| TOK_YAML1_ARR_START   { PRS_PRINTF(("Token: TOK_YAML1_ARR_START\n")); }
-| TOK_YAML1_ARR_END     { PRS_PRINTF(("Token: TOK_YAML1_ARR_END\n")); }
-| TOK_YAML1_BLOCK_START { PRS_PRINTF(("Token: TOK_YAML1_BLOCK_START\n")); }
-| TOK_YAML1_BLOCK_END   { PRS_PRINTF(("Token: TOK_YAML1_BLOCK_END\n")); }
+element: 
+  TOK_YAML1_COLON       { printf(" : "); }
+| TOK_YAML1_NULL        { printf("%s\n", yytext); }
+| TOK_YAML1_STRING      { printf("%s\n", yytext); }
+| TOK_YAML1_NUMBER      { printf("%s\n", yytext); }
+| TOK_YAML1_NEWLINE     { INDENTED_PRINTF(indent_level, ","); }
+| TOK_YAML1_KEY         { INDENTED_PRINTF(indent_level, "\"%s\"", yytext); }
+| TOK_YAML1_OBJ_START   { INDENTED_PRINTF(indent_level, "{\n"); }
+| TOK_YAML1_OBJ_END     { INDENTED_PRINTF(indent_level, "}\n"); }
+| TOK_YAML1_ARR_START   { INDENTED_PRINTF(indent_level, "[\n"); }
+| TOK_YAML1_ARR_END     { INDENTED_PRINTF(indent_level, "]\n"); }
+| TOK_YAML1_BLOCK_START { INDENTED_PRINTF(indent_level, "\n"); }
+| TOK_YAML1_BLOCK_END   { INDENTED_PRINTF(indent_level, "\n"); }
 
 %%
 
