@@ -111,6 +111,7 @@ extern FILE* yyin;
 %}
 
 %option noyywrap
+%x KEY_STATE NL_STATE
 
 DASH                  "-"
 COLON                 ":"
@@ -129,12 +130,18 @@ FLOAT_INF             [+-]?[Ii][Nn][Ff]
 FLOAT_NUMBER          {FLOAT_NAN}|{FLOAT_INF}|{INT_NUMBER}("."[[:digit:]]*)?([eE]{INT_NUMBER})?
 KEY                   [a-zA-Z_][a-zA-Z0-9_\-]*
 YAML_ARRAY_DASH       {DASH}{SPACE}+ 
-YAML_KEY_ARRAY_PAIR   {SPACE}*{KEY}{SPACE}*{COLON}{SPACE}*{NEWLINE}{SPACE}*{DASH}
-YAML_KEY_OBJECT_PAIR  {SPACE}*{KEY}{SPACE}*{COLON}{SPACE}*{NEWLINE}
-YAML_KEY              {KEY}{SPACE}*{COLON}{SPACE}*
+ARR_START             {NEWLINE}{SPACE}*{DASH}
+YAML_KEY              {KEY}
 
 %%
 
+{NULL}                  { LEX_PRINTF(("[LEX]VOID_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NULL); }
+{TRUE}                  { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
+{FALSE}                 { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
+{STRING}                { LEX_PRINTF(("[LEX]STR_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_STRING); }
+{INT_NUMBER}            { LEX_PRINTF(("[LEX]INT_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_NUMBER); }
+{FLOAT_NUMBER}          { LEX_PRINTF(("[LEX]FLT_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_NUMBER); }
+{NEWLINE}               { BEGIN(NL_STATE); }
 {YAML_BLOCK_START}      { LEX_PRINTF(("[LEX]YAML_START\n")); SEND_TOKEN(TOK_YAML1_BLOCK_START); }
 {YAML_ARRAY_DASH}       {
                           if (ts_peek(t_stack) != TOK_YAML1_ARR_END)
@@ -143,32 +150,54 @@ YAML_KEY              {KEY}{SPACE}*{COLON}{SPACE}*
                             TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
                           }
                         }
-{YAML_KEY_ARRAY_PAIR}   {
-                          SEND_TOKEN(TOK_YAML1_STRING);
+{YAML_KEY}              {
+                          SEND_TOKEN(TOK_YAML1_KEY);
+                          LEX_PRINTF(("[LEX] key is: %s\n", yytext));
+                        }
+{COLON}                 {
+                          LEX_PRINTF(("[LEX] colon inserted: \n"));
                           SEND_TOKEN(TOK_YAML1_COLON);
+                          BEGIN(KEY_STATE);
+                        }
+  /* ------------------------ Handling NEWLINE_STATE ------------------------ */
+<NL_STATE>{INDENT}+     {
+                          int new_indent_level = yyleng / 2;
+                          int diff = new_indent_level - indent_level;
+                          /* 
+                            If indentation level wasn't changed, then next
+                            element exists and belongs to current struct.
+                          */
+                          if (diff == 0)
+                          {
+                            LEX_PRINTF(("[LEX]NEWLINE\n"));
+                            SEND_TOKEN(TOK_YAML1_NEWLINE);
+                          }
+                          else {
+                            REJECT;
+                          }
+                          BEGIN(INITIAL);
+                        }
+<NL_STATE>.             {
+                          BEGIN(INITIAL);
+                        }
+  /* ------------------------------------------------------------------------ */
+  /* -------------------------- Handling KEY_STATE -------------------------- */
+<KEY_STATE>{ARR_START}  {
                           SEND_TOKEN(TOK_YAML1_ARR_START);
                           TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
                           LEX_PRINTF(("[LEX] array is: %s", yytext));
+                          BEGIN(INITIAL);
                         }
-{YAML_KEY_OBJECT_PAIR}  {
-                          SEND_TOKEN(TOK_YAML1_STRING);
-                          SEND_TOKEN(TOK_YAML1_COLON);
+<KEY_STATE>{NEWLINE}    {
                           SEND_TOKEN(TOK_YAML1_OBJ_START);
                           TOKEN_STACK_PUSH(TOK_YAML1_OBJ_END);
                           LEX_PRINTF(("[LEX] object is: %s", yytext));
+                          BEGIN(INITIAL);
                         }
-{YAML_KEY}{COLON}       {
-                          SEND_TOKEN(TOK_YAML1_STRING);
-                          SEND_TOKEN(TOK_YAML1_COLON);
-                          LEX_PRINTF(("[LEX] key is: %s\n", yytext));
+<KEY_STATE>.            {
+                            BEGIN(INITIAL);
                         }
-{NULL}                  { LEX_PRINTF(("[LEX]VOID_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NULL); }
-{TRUE}                  { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
-{FALSE}                 { LEX_PRINTF(("[LEX]BOOL_VALUE: %s\n", yytext)); SEND_TOKEN(TOK_YAML1_NUMBER); }
-{STRING}                { LEX_PRINTF(("[LEX]STR_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_STRING); }
-{INT_NUMBER}            { LEX_PRINTF(("[LEX]INT_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_NUMBER); }
-{FLOAT_NUMBER}          { LEX_PRINTF(("[LEX]FLT_VALUE: %s\n", yytext));  SEND_TOKEN(TOK_YAML1_NUMBER); }
-{NEWLINE}               { LEX_PRINTF(("[LEX]NEWLINE\n"));                SEND_TOKEN(TOK_YAML1_NEWLINE); }
+  /* ------------------------------------------------------------------------ */
 {INDENT}+               {  
                           int new_indent_level = yyleng / 2;
                           int diff = new_indent_level - indent_level;
