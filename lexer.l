@@ -103,6 +103,7 @@ int yyinput(void) {
 
 int indent_level = 0;
 int last_pushed_token = -1;
+int might_be_nested = 0;
 token_stack* t_stack = NULL;
 
 YYSTYPE yylval;
@@ -117,7 +118,7 @@ extern FILE* yyin;
 DASH                  "-"
 COLON                 ":"
 SPACE                 " "
-INDENT                "  "{DASH}*
+INDENT                "  "
 NULL                  "null"
 TRUE                  "true"
 FALSE                 "false"
@@ -130,8 +131,8 @@ FLOAT_NAN             [+-]?[Nn][Aa][Nn]
 FLOAT_INF             [+-]?[Ii][Nn][Ff]
 FLOAT_NUMBER          {FLOAT_NAN}|{FLOAT_INF}|{INT_NUMBER}("."[[:digit:]]*)?([eE]{INT_NUMBER})?
 KEY                   [a-zA-Z_][a-zA-Z0-9_\-]*
-YAML_ARRAY_DASH       {DASH}{SPACE}* 
-ARR_START             {SPACE}*{DASH}{SPACE}*
+YAML_ARRAY_DASH       {DASH}
+ARR_START             {DASH}{SPACE}
 %%
 
 {NULL}                  { SEND_TOKEN(TOK_YAML1_NULL); }
@@ -140,18 +141,32 @@ ARR_START             {SPACE}*{DASH}{SPACE}*
 {STRING}                { SEND_TOKEN(TOK_YAML1_STRING); }
 {INT_NUMBER}            { SEND_TOKEN(TOK_YAML1_NUMBER); }
 {FLOAT_NUMBER}          { SEND_TOKEN(TOK_YAML1_NUMBER); }
-{NEWLINE}               { BEGIN(NL_STATE); }
-{COLON}                 {SEND_TOKEN(TOK_YAML1_COLON); BEGIN(KEY_STATE);}
-{YAML_BLOCK_START}      { SEND_TOKEN(TOK_YAML1_BLOCK_START); }
-{YAML_ARRAY_DASH}       {
-                          if (ts_peek(t_stack) != TOK_YAML1_ARR_END)
+{COLON}                 { SEND_TOKEN(TOK_YAML1_COLON);}
+{NEWLINE}{INDENT}+{ARR_START}*       { 
+                          int new_indent_level = (yyleng - 1) / 2;
+                          int diff = new_indent_level - indent_level;
+                          /* 
+                            If indentation level wasn't changed, then next
+                            element exists and belongs to current struct.
+                          */
+                          if (diff == 0) { SEND_TOKEN(TOK_YAML1_NEWLINE); }
+                          else if (diff < 0) { STACK_POP_N_TOKENS(-diff); }
+                          if (yytext[yyleng - 2] == '-')
                           {
-                            SEND_TOKEN(TOK_YAML1_ARR_START);
-                            TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
+                            if (ts_peek(t_stack) != TOK_YAML1_ARR_END \
+                            || last_pushed_token == TOK_YAML1_COLON)
+                            {
+                              SEND_TOKEN(TOK_YAML1_ARR_START);
+                              TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
+                            }
                           }
+                          indent_level = new_indent_level;
+                          //printf("indent level is: %d\n", indent_level);
                         }
+{YAML_BLOCK_START}      { SEND_TOKEN(TOK_YAML1_BLOCK_START); }
 {KEY}                   {
-                          if (last_pushed_token == TOK_YAML1_ARR_START){
+                          if (last_pushed_token == TOK_YAML1_ARR_START \
+                          || last_pushed_token == TOK_YAML1_COLON){
                             SEND_TOKEN(TOK_YAML1_OBJ_START);
                             TOKEN_STACK_PUSH(TOK_YAML1_OBJ_END);
                           }
@@ -166,60 +181,6 @@ ARR_START             {SPACE}*{DASH}{SPACE}*
                           }
                           SEND_TOKEN(TOK_YAML1_KEY);
                           LEX_PRINTF(("[LEX] key is: %s\n", yytext));
-                        }
-  /* ------------------------ Handling NEWLINE_STATE ------------------------ */
-<NL_STATE>{INDENT}+      {
-                          int new_indent_level = yyleng / 2;
-                          int diff = new_indent_level - indent_level;
-                          /* 
-                            If indentation level wasn't changed, then next
-                            element exists and belongs to current struct.
-                          */
-                          if (diff == 0)
-                          {
-                            SEND_TOKEN(TOK_YAML1_NEWLINE);
-                          }
-                          else if (diff < 0)
-                          {
-                            STACK_POP_N_TOKENS(-diff);
-                          }
-                          indent_level = new_indent_level;
-                          BEGIN(INITIAL); /* Get back anyways. */
-                        }
-<NL_STATE>.             {
-                          /* Get back in any other situation. */
-                          REJECT;
-                          BEGIN(INITIAL);
-                        }
-  /* ------------------------------------------------------------------------ */
-  /* -------------------------- Handling KEY_STATE -------------------------- */
-<KEY_STATE>{NEWLINE}*{ARR_START}  {
-                          SEND_TOKEN(TOK_YAML1_ARR_START);
-                          TOKEN_STACK_PUSH(TOK_YAML1_ARR_END);
-                          LEX_PRINTF(("[LEX] array is: %s", yytext));
-                          BEGIN(INITIAL);
-                        }
-
-<KEY_STATE>{NEWLINE}    {
-                          SEND_TOKEN(TOK_YAML1_OBJ_START);
-                          TOKEN_STACK_PUSH(TOK_YAML1_OBJ_END);
-                          BEGIN(INITIAL);
-                        }
-
-<KEY_STATE>.            {
-                          BEGIN(INITIAL);
-                        }
-  /* ------------------------------------------------------------------------ */
-{INDENT}+{YAML_ARRAY_DASH}*               { 
-                          //printf("INDENT triggered\n");
-                          int new_indent_level = yyleng / 2;
-
-                          int diff = new_indent_level - indent_level;
-                          if (diff < 0)
-                          {
-                            STACK_POP_N_TOKENS(-diff);
-                          }
-                          indent_level = new_indent_level;
                         }
 {YAML_BLOCK_END}        {
                           STACK_POP_N_TOKENS(indent_level);
