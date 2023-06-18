@@ -1,5 +1,4 @@
 %{
-#include <stdio.h>
 #include "parser.tab.h"  // Include the parser header file
 // -----------------------------------------------------------------------------
 // Helper structure which will hold all stack info.
@@ -201,7 +200,6 @@ ARR_START             {DASH}{SPACE}
                             SEND_TOKEN(TOK_YAML1_NEWLINE);
                           }
                           SEND_TOKEN(TOK_YAML1_KEY);
-                          LEX_PRINTF(("[LEX] key is: %s\n", yytext));
                         }
 {YAML_BLOCK_END}        {
                           STACK_POP_N_TOKENS(indent_level);
